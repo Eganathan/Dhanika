@@ -40,14 +40,24 @@ body {
 }
 
 .list-group-item {
-    border-radius: 8px !important;
-    margin-bottom: 10px;
+    border-radius: 0 !important;
+    margin-bottom: 0;
     border: 1px solid #eee;
+    border-bottom: 1px solid #f0f0f0;
     padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:last-child {
+    border-bottom: 1px solid #eee;
+    border-radius: 0 0 8px 8px !important;
+}
+
+.list-group-item:first-child {
+    border-radius: 8px 8px 0 0 !important;
 }
 
 .list-group-item:hover {
@@ -55,12 +65,44 @@ body {
 }
 
 .list-group-item .amount {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.1rem;
+}
+
+/* Transaction action buttons - hidden by default */
+.transaction-actions {
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover .transaction-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Income transaction styling */
+.list-group-item.income-transaction {
+    background-color: #f8fff9;
+    border-left: 4px solid #28a745;
+}
+
+.list-group-item.income-transaction:hover {
+    background-color: #f0fff4;
 }
 
 .list-group-item .income {
     color: #28a745;
+}
+
+/* Expense transaction styling */
+.list-group-item.expense-transaction {
+    background-color: #fff8f8;
+    border-left: 4px solid #dc3545;
+}
+
+.list-group-item.expense-transaction:hover {
+    background-color: #fff0f0;
 }
 
 .list-group-item .expense {
@@ -82,25 +124,42 @@ body {
     margin-left: 5px;
 }
 
-/* Quick add buttons styling */
-.quick-add {
-    height: 70px;
-    font-size: 1.5rem;
+
+/* Equal height cards for top row - chart adjusts to form */
+.equal-height-row {
+    display: flex;
+    align-items: stretch;
+}
+
+.equal-height-row .card {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
 }
 
-.quick-add:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+.equal-height-row .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.quick-add small {
-    font-size: 0.75rem;
-    margin-top: 2px;
+/* Form card maintains natural height */
+.equal-height-row .card-form .card-body {
+    display: block;
+}
+
+.equal-height-row .card-form .card-body form {
+    display: block;
+}
+
+/* Chart card adjusts its content to match form height */
+.equal-height-row .card:not(.card-form) .card-body {
+    justify-content: space-between;
+}
+
+.equal-height-row .card:not(.card-form) canvas {
+    flex: 1;
+    max-height: 200px;
 }
 
 /* Chart tabs styling */
@@ -158,15 +217,6 @@ body {
 
 /* Responsive improvements */
 @media (max-width: 768px) {
-    .quick-add {
-        height: 60px;
-        font-size: 1.2rem;
-    }
-    
-    .quick-add small {
-        font-size: 0.7rem;
-    }
-    
     .transaction-actions {
         flex-direction: column;
         gap: 5px;

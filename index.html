@@ -13,8 +13,8 @@
         <h1>Personal Budget</h1>
     </header>
     <main class="container mt-4">
-        <div class="row">
-            <div class="col-lg-4">
+        <div class="row equal-height-row">
+            <div class="col-lg-6">
                 <div class="card card-form mb-4">
                     <div class="card-body">
                         <h2 class="card-title">New Transaction</h2>
@@ -58,6 +58,8 @@
                         </form>
                     </div>
                 </div>
+            </div>
+            <div class="col-lg-6">
                 <div class="card mb-4">
                     <div class="card-body">
                         <h2 class="card-title">Budget Overview</h2>
@@ -88,34 +90,10 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-8">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h2 class="card-title mb-3">Quick Add Common Expenses</h2>
-                        <div class="quick-add-buttons row g-2 mb-4">
-                            <div class="col-6 col-md-3">
-                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="food" data-description="Lunch">
-                                    🍽️<br><small>Lunch</small>
-                                </button>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="transportation" data-description="Gas">
-                                    ⛽<br><small>Gas</small>
-                                </button>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="shopping" data-description="Groceries">
-                                    🛒<br><small>Groceries</small>
-                                </button>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="entertainment" data-description="Coffee">
-                                    ☕<br><small>Coffee</small>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <hr class="my-5">
+        <div class="row">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">

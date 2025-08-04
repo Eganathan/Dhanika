@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpensesEl = document.getElementById('total-expenses');
     const balanceEl = document.getElementById('balance');
-    const quickAddButtons = document.querySelectorAll('.quick-add');
     const filterButtons = document.querySelectorAll('input[name="filter"]');
     const chartTypeButtons = document.querySelectorAll('input[name="chart-type"]');
 
@@ -39,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         filteredTransactions.forEach(transaction => {
             const item = document.createElement('li');
-            item.classList.add('list-group-item');
+            item.classList.add('list-group-item', `${transaction.type}-transaction`);
             item.dataset.id = transaction.id;
             
             const categoryIcon = categoryEmojis[transaction.category] || '📦';
@@ -302,17 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
         html2pdf().from(report).save('budget-summary.pdf');
     });
     
-    quickAddButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const category = button.dataset.category;
-            const description = button.dataset.description;
-            
-            document.getElementById('description').value = description;
-            document.getElementById('category').value = category;
-            document.querySelector('input[name="type"][value="expense"]').checked = true;
-            document.getElementById('amount').focus();
-        });
-    });
     
     filterButtons.forEach(button => {
         button.addEventListener('change', () => {
