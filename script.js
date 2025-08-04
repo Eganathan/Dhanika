@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const budgetChart = document.getElementById('budget-chart').getContext('2d');
     const cancelEditBtn = document.getElementById('cancel-edit');
     const downloadBtn = document.getElementById('download-btn');
+    const exportBtnHeader = document.getElementById('export-btn-header');
+    const importFileHeader = document.getElementById('import-file-header');
+    const tooltipToggle = document.getElementById('tooltip-toggle');
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpensesEl = document.getElementById('total-expenses');
     const balanceEl = document.getElementById('balance');
@@ -110,6 +113,295 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFilter = 'all';
     let currentCategoryFilter = 'all';
     let currentChartType = 'overview';
+
+    // Tooltip configuration (loaded from JSON)
+    let tooltipConfig = {};
+    let tooltipsEnabled = localStorage.getItem('tooltipsEnabled') !== 'false'; // Default to true
+    let activeTooltipInstances = [];
+    let currentActiveTooltip = null;
+
+    // Load tooltip configuration from JSON file
+    async function loadTooltipConfig() {
+        try {
+            const response = await fetch('./tooltips.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const tooltipData = await response.json();
+            
+            // Flatten the nested structure into a single object
+            tooltipConfig = {};
+            Object.values(tooltipData).forEach(section => {
+                Object.assign(tooltipConfig, section);
+            });
+            
+            console.log('Tooltip configuration loaded successfully');
+        } catch (error) {
+            console.error('Failed to load tooltip configuration:', error);
+            // Fallback to basic tooltips if JSON fails to load
+            tooltipConfig = {
+                '#export-btn-header': { placement: 'bottom', title: 'Export your data with password encryption' },
+                'label[for="import-file-header"]': { placement: 'bottom', title: 'Import encrypted data backup' }
+            };
+        }
+    }
+
+    // Function to hide all active tooltips
+    function hideAllTooltips() {
+        activeTooltipInstances.forEach(tooltipInstance => {
+            try {
+                tooltipInstance.hide();
+            } catch (e) {
+                // Ignore errors if tooltip is already disposed
+            }
+        });
+        currentActiveTooltip = null;
+    }
+
+    // Function to apply tooltips from configuration
+    function initializeTooltips() {
+        // Clear existing tooltips
+        activeTooltipInstances.forEach(tooltip => {
+            try {
+                tooltip.dispose();
+            } catch (e) {
+                // Ignore errors
+            }
+        });
+        activeTooltipInstances = [];
+
+        if (!tooltipsEnabled) {
+            updateTooltipToggleButton();
+            return;
+        }
+
+        Object.keys(tooltipConfig).forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                const config = tooltipConfig[selector];
+                element.setAttribute('data-bs-toggle', 'tooltip');
+                element.setAttribute('data-bs-placement', config.placement);
+                element.setAttribute('title', config.title);
+            });
+        });
+        
+        // Initialize Bootstrap tooltips with custom behavior
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            const tooltipInstance = new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover focus',
+                delay: { show: 500, hide: 100 }
+            });
+            
+            activeTooltipInstances.push(tooltipInstance);
+            
+            // Add event listeners for single tooltip visibility
+            tooltipTriggerEl.addEventListener('show.bs.tooltip', function() {
+                // Hide other tooltips when showing this one
+                if (currentActiveTooltip && currentActiveTooltip !== tooltipInstance) {
+                    currentActiveTooltip.hide();
+                }
+                currentActiveTooltip = tooltipInstance;
+            });
+            
+            tooltipTriggerEl.addEventListener('hidden.bs.tooltip', function() {
+                if (currentActiveTooltip === tooltipInstance) {
+                    currentActiveTooltip = null;
+                }
+            });
+        });
+        
+        updateTooltipToggleButton();
+    }
+
+    // Function to toggle tooltips on/off
+    function toggleTooltips() {
+        tooltipsEnabled = !tooltipsEnabled;
+        localStorage.setItem('tooltipsEnabled', tooltipsEnabled.toString());
+        
+        if (!tooltipsEnabled) {
+            hideAllTooltips();
+            // Remove all tooltip attributes
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+                element.removeAttribute('data-bs-toggle');
+                element.removeAttribute('data-bs-placement');
+                element.removeAttribute('title');
+            });
+            // Dispose all tooltip instances
+            activeTooltipInstances.forEach(tooltip => {
+                try {
+                    tooltip.dispose();
+                } catch (e) {
+                    // Ignore errors
+                }
+            });
+            activeTooltipInstances = [];
+        } else {
+            initializeTooltips();
+        }
+        
+        updateTooltipToggleButton();
+        showSnackbar(tooltipsEnabled ? 'Tooltips enabled' : 'Tooltips disabled');
+    }
+
+    // Function to update tooltip toggle button appearance
+    function updateTooltipToggleButton() {
+        if (tooltipsEnabled) {
+            tooltipToggle.classList.remove('btn-outline-info');
+            tooltipToggle.classList.add('btn-info');
+            tooltipToggle.innerHTML = '<i class="bi bi-question-circle-fill"></i>';
+        } else {
+            tooltipToggle.classList.remove('btn-info');
+            tooltipToggle.classList.add('btn-outline-info');
+            tooltipToggle.innerHTML = '<i class="bi bi-question-circle"></i>';
+        }
+    }
+
+    // Function to hide tooltips on user input
+    function addInputListeners() {
+        // Hide tooltips when user starts typing in any input field
+        document.addEventListener('input', hideAllTooltips);
+        document.addEventListener('keydown', hideAllTooltips);
+        document.addEventListener('click', function(e) {
+            // Hide tooltips when clicking on form elements (but not tooltip triggers)
+            if (e.target.matches('input, select, textarea, button[type="submit"]')) {
+                hideAllTooltips();
+            }
+        });
+    }
+
+    // Encryption utilities
+    async function encryptData(data, password) {
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey(
+            'raw',
+            enc.encode(password),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveBits', 'deriveKey']
+        );
+        
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        const key = await window.crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: salt,
+                iterations: 100000,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt']
+        );
+        
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await window.crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            enc.encode(JSON.stringify(data))
+        );
+        
+        return {
+            encrypted: Array.from(new Uint8Array(encrypted)),
+            salt: Array.from(salt),
+            iv: Array.from(iv)
+        };
+    }
+
+    async function decryptData(encryptedData, password) {
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+        
+        const keyMaterial = await window.crypto.subtle.importKey(
+            'raw',
+            enc.encode(password),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveBits', 'deriveKey']
+        );
+        
+        const key = await window.crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: new Uint8Array(encryptedData.salt),
+                iterations: 100000,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+        );
+        
+        const decrypted = await window.crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: new Uint8Array(encryptedData.iv) },
+            key,
+            new Uint8Array(encryptedData.encrypted)
+        );
+        
+        return JSON.parse(dec.decode(decrypted));
+    }
+
+    // Export data with encryption
+    async function exportData() {
+        const password = prompt('Enter a password to encrypt your data:');
+        if (!password) return;
+        
+        try {
+            const exportData = {
+                transactions: transactions,
+                transactionTypes: transactionTypes,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const encrypted = await encryptData(exportData, password);
+            const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `budget-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSnackbar('Data exported successfully!');
+        } catch (error) {
+            console.error('Export error:', error);
+            showSnackbar('Export failed. Please try again.', 'error');
+        }
+    }
+
+    // Import data with decryption
+    async function importData(file) {
+        const password = prompt('Enter the password to decrypt your data:');
+        if (!password) return;
+        
+        try {
+            const text = await file.text();
+            const encryptedData = JSON.parse(text);
+            const decrypted = await decryptData(encryptedData, password);
+            
+            if (decrypted.transactions && Array.isArray(decrypted.transactions)) {
+                if (confirm(`This will replace your current ${transactions.length} transactions with ${decrypted.transactions.length} imported transactions. Continue?`)) {
+                    transactions = decrypted.transactions;
+                    if (decrypted.transactionTypes) {
+                        transactionTypes = decrypted.transactionTypes;
+                    }
+                    renderTransactions();
+                    showSnackbar(`Successfully imported ${transactions.length} transactions!`);
+                }
+            } else {
+                throw new Error('Invalid file format');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showSnackbar('Import failed. Check password and file format.', 'error');
+        }
+    }
 
     // Render category filter tags
     function renderCategoryFilters() {
@@ -218,6 +510,40 @@ document.addEventListener('DOMContentLoaded', () => {
         updateChart();
         updateStats();
         updateLocalStorage();
+        
+        // Apply tooltips to dynamically created transaction buttons
+        if (tooltipsEnabled) {
+            document.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => {
+                const btnClass = btn.classList.contains('edit-btn') ? '.edit-btn' : '.delete-btn';
+                const config = tooltipConfig[btnClass];
+                if (config && !btn.hasAttribute('data-bs-toggle')) {
+                    btn.setAttribute('data-bs-toggle', 'tooltip');
+                    btn.setAttribute('data-bs-placement', config.placement);
+                    btn.setAttribute('title', config.title);
+                    
+                    const tooltipInstance = new bootstrap.Tooltip(btn, {
+                        trigger: 'hover focus',
+                        delay: { show: 500, hide: 100 }
+                    });
+                    
+                    activeTooltipInstances.push(tooltipInstance);
+                    
+                    // Add event listeners for single tooltip visibility
+                    btn.addEventListener('show.bs.tooltip', function() {
+                        if (currentActiveTooltip && currentActiveTooltip !== tooltipInstance) {
+                            currentActiveTooltip.hide();
+                        }
+                        currentActiveTooltip = tooltipInstance;
+                    });
+                    
+                    btn.addEventListener('hidden.bs.tooltip', function() {
+                        if (currentActiveTooltip === tooltipInstance) {
+                            currentActiveTooltip = null;
+                        }
+                    });
+                }
+            });
+        }
     }
 
     function updateChart() {
@@ -462,6 +788,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         html2pdf().from(report).save('budget-summary.pdf');
     });
+
+    exportBtnHeader.addEventListener('click', exportData);
+
+    importFileHeader.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importData(file);
+            e.target.value = '';
+        }
+    });
+
+    tooltipToggle.addEventListener('click', toggleTooltips);
     
     
     filterButtons.forEach(button => {
@@ -486,4 +824,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTransactions();
     updateStats();
     loadTransactionTypes();
+    
+    // Load tooltip configuration and initialize all tooltips
+    loadTooltipConfig().then(() => {
+        initializeTooltips();
+        addInputListeners();
+    });
 });
