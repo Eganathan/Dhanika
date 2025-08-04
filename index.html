@@ -29,6 +29,21 @@
                             </label>
                             <input type="file" id="import-file-header" accept=".json" style="display: none;">
                         </div>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="currency-selector" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-currency-exchange me-1"></i>
+                                <span id="current-currency">₹ INR</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" data-currency="INR" data-symbol="₹">₹ Indian Rupee (INR)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="USD" data-symbol="$">$ US Dollar (USD)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="EUR" data-symbol="€">€ Euro (EUR)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="GBP" data-symbol="£">£ British Pound (GBP)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="JPY" data-symbol="¥">¥ Japanese Yen (JPY)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="CAD" data-symbol="C$">C$ Canadian Dollar (CAD)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="AUD" data-symbol="A$">A$ Australian Dollar (AUD)</a></li>
+                            </ul>
+                        </div>
                         <button class="btn btn-outline-info" id="tooltip-toggle" title="Toggle helpful tooltips on/off">
                             <i class="bi bi-question-circle"></i>
                         </button>
@@ -61,7 +76,7 @@
                                 <input type="text" class="form-control" id="description" placeholder="Description" required>
                             </div>
                             <div class="mb-3">
-                                <input type="number" class="form-control" id="amount" placeholder="Amount" required>
+                                <input type="number" class="form-control" id="amount" placeholder="Amount (e.g., 1500.75)" required step="0.01">
                             </div>
                             <div class="mb-3">
                                 <select class="form-select" id="category" required>

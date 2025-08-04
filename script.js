@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBtnHeader = document.getElementById('export-btn-header');
     const importFileHeader = document.getElementById('import-file-header');
     const tooltipToggle = document.getElementById('tooltip-toggle');
+    const currencySelector = document.getElementById('currency-selector');
+    const currentCurrencySpan = document.getElementById('current-currency');
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpensesEl = document.getElementById('total-expenses');
     const balanceEl = document.getElementById('balance');
@@ -119,6 +121,93 @@ document.addEventListener('DOMContentLoaded', () => {
     let tooltipsEnabled = localStorage.getItem('tooltipsEnabled') !== 'false'; // Default to true
     let activeTooltipInstances = [];
     let currentActiveTooltip = null;
+    
+    // Currency configuration
+    let currentCurrency = localStorage.getItem('selectedCurrency') || 'INR';
+    let currentCurrencySymbol = localStorage.getItem('selectedCurrencySymbol') || '₹';
+    
+    const currencyConfig = {
+        'INR': { symbol: '₹', name: 'Indian Rupee', decimals: 2, locale: 'en-IN' },
+        'USD': { symbol: '$', name: 'US Dollar', decimals: 2, locale: 'en-US' },
+        'EUR': { symbol: '€', name: 'Euro', decimals: 2, locale: 'de-DE' },
+        'GBP': { symbol: '£', name: 'British Pound', decimals: 2, locale: 'en-GB' },
+        'JPY': { symbol: '¥', name: 'Japanese Yen', decimals: 0, locale: 'ja-JP' },
+        'CAD': { symbol: 'C$', name: 'Canadian Dollar', decimals: 2, locale: 'en-CA' },
+        'AUD': { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' }
+    };
+
+    // Format amount with current currency and locale-specific formatting
+    function formatCurrency(amount) {
+        const config = currencyConfig[currentCurrency];
+        const absAmount = Math.abs(amount);
+        
+        try {
+            // Use Intl.NumberFormat for proper locale formatting
+            const formatter = new Intl.NumberFormat(config.locale, {
+                minimumFractionDigits: config.decimals,
+                maximumFractionDigits: config.decimals
+            });
+            
+            const formattedNumber = formatter.format(absAmount);
+            return `${currentCurrencySymbol}${formattedNumber}`;
+        } catch (error) {
+            // Fallback to manual formatting if Intl is not supported
+            const formattedAmount = absAmount.toFixed(config.decimals);
+            if (currentCurrency === 'INR') {
+                // Indian numbering system with commas
+                return `${currentCurrencySymbol}${formatIndianNumber(formattedAmount)}`;
+            } else {
+                // Standard thousand separators
+                return `${currentCurrencySymbol}${formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+            }
+        }
+    }
+
+    // Indian numbering system helper
+    function formatIndianNumber(num) {
+        const parts = num.split('.');
+        const integerPart = parts[0];
+        const decimalPart = parts[1] ? '.' + parts[1] : '';
+        
+        // Indian numbering: first comma after 3 digits, then every 2 digits
+        let formatted = integerPart;
+        if (integerPart.length > 3) {
+            const lastThree = integerPart.slice(-3);
+            const remaining = integerPart.slice(0, -3);
+            formatted = remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+        }
+        
+        return formatted + decimalPart;
+    }
+
+    // Currency selection functionality
+    function initializeCurrency() {
+        currentCurrencySpan.textContent = `${currentCurrencySymbol} ${currentCurrency}`;
+        
+        // Add click listeners to dropdown items
+        document.querySelectorAll('.dropdown-item[data-currency]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const currency = e.target.dataset.currency;
+                const symbol = e.target.dataset.symbol;
+                
+                currentCurrency = currency;
+                currentCurrencySymbol = symbol;
+                
+                // Save to localStorage
+                localStorage.setItem('selectedCurrency', currency);
+                localStorage.setItem('selectedCurrencySymbol', symbol);
+                
+                // Update UI
+                currentCurrencySpan.textContent = `${symbol} ${currency}`;
+                
+                // Re-render all transactions and stats
+                renderTransactions();
+                
+                showSnackbar(`Currency changed to ${currencyConfig[currency].name}`);
+            });
+        });
+    }
 
     // Load tooltip configuration from JSON file
     async function loadTooltipConfig() {
@@ -352,6 +441,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const exportData = {
                 transactions: transactions,
                 transactionTypes: transactionTypes,
+                currency: currentCurrency,
+                currencySymbol: currentCurrencySymbol,
                 exportDate: new Date().toISOString(),
                 version: '1.0'
             };
@@ -390,6 +481,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     transactions = decrypted.transactions;
                     if (decrypted.transactionTypes) {
                         transactionTypes = decrypted.transactionTypes;
+                    }
+                    if (decrypted.currency && decrypted.currencySymbol) {
+                        currentCurrency = decrypted.currency;
+                        currentCurrencySymbol = decrypted.currencySymbol;
+                        localStorage.setItem('selectedCurrency', currentCurrency);
+                        localStorage.setItem('selectedCurrencySymbol', currentCurrencySymbol);
+                        currentCurrencySpan.textContent = `${currentCurrencySymbol} ${currentCurrency}`;
                     }
                     renderTransactions();
                     showSnackbar(`Successfully imported ${transactions.length} transactions!`);
@@ -496,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="text-end d-flex flex-column align-items-end">
-                        <p class="amount ${transaction.type} mb-1 fs-5">${transaction.type === 'income' ? '+$' : '-$'}${Math.abs(transaction.amount).toFixed(2)}</p>
+                        <p class="amount ${transaction.type} mb-1 fs-5">${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}</p>
                         <div class="transaction-actions">
                             <button class="btn btn-sm btn-outline-primary edit-btn"><i class="bi bi-pencil"></i></button>
                             <button class="btn btn-sm btn-outline-danger delete-btn"><i class="bi bi-trash"></i></button>
@@ -580,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return context.label + ': $' + context.parsed.toFixed(2);
+                                    return context.label + ': ' + formatCurrency(context.parsed);
                                 }
                             }
                         }
@@ -631,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 label: function(context) {
                                     const total = amounts.reduce((a, b) => a + b, 0);
                                     const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return context.label + ': $' + context.parsed.toFixed(2) + ' (' + percentage + '%)';
+                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
                                 }
                             }
                         }
@@ -646,9 +744,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
         const balance = income - expenses;
         
-        totalIncomeEl.textContent = '$' + income.toFixed(2);
-        totalExpensesEl.textContent = '$' + expenses.toFixed(2);
-        balanceEl.textContent = '$' + balance.toFixed(2);
+        totalIncomeEl.textContent = formatCurrency(income);
+        totalExpensesEl.textContent = formatCurrency(expenses);
+        balanceEl.textContent = formatCurrency(balance);
         balanceEl.className = 'fw-bold ' + (balance >= 0 ? 'text-success' : 'text-danger');
     }
 
@@ -764,24 +862,24 @@ document.addEventListener('DOMContentLoaded', () => {
             <table>
                 <thead><tr><th>Description</th><th>Amount</th></tr></thead>
                 <tbody>
-                    ${incomes.map(t => `<tr><td>${t.description}</td><td>${t.amount.toFixed(2)}</td></tr>`).join('')}
-                    <tr class="total"><td>Total</td><td>${totalIncome.toFixed(2)}</td></tr>
+                    ${incomes.map(t => `<tr><td>${t.description}</td><td>${formatCurrency(t.amount)}</td></tr>`).join('')}
+                    <tr class="total"><td>Total</td><td>${formatCurrency(totalIncome)}</td></tr>
                 </tbody>
             </table>
             <h2>Expenses</h2>
             <table>
                 <thead><tr><th>Description</th><th>Amount</th></tr></thead>
                 <tbody>
-                    ${expenses.map(t => `<tr><td>${t.description}</td><td>${t.amount.toFixed(2)}</td></tr>`).join('')}
-                    <tr class="total"><td>Total</td><td>${totalExpense.toFixed(2)}</td></tr>
+                    ${expenses.map(t => `<tr><td>${t.description}</td><td>${formatCurrency(t.amount)}</td></tr>`).join('')}
+                    <tr class="total"><td>Total</td><td>${formatCurrency(totalExpense)}</td></tr>
                 </tbody>
             </table>
             <h2>Summary</h2>
             <table>
                 <tbody>
-                    <tr><td>Total Income</td><td>${totalIncome.toFixed(2)}</td></tr>
-                    <tr><td>Total Expense</td><td>${totalExpense.toFixed(2)}</td></tr>
-                    <tr class="total"><td>Balance</td><td>${balance.toFixed(2)}</td></tr>
+                    <tr><td>Total Income</td><td>${formatCurrency(totalIncome)}</td></tr>
+                    <tr><td>Total Expense</td><td>${formatCurrency(totalExpense)}</td></tr>
+                    <tr class="total"><td>Balance</td><td>${formatCurrency(balance)}</td></tr>
                 </tbody>
             </table>
         `;
@@ -824,6 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTransactions();
     updateStats();
     loadTransactionTypes();
+    initializeCurrency();
     
     // Load tooltip configuration and initialize all tooltips
     loadTooltipConfig().then(() => {

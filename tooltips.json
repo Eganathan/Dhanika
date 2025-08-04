@@ -25,7 +25,7 @@
     },
     "#amount": {
       "placement": "top",
-      "title": "Enter the amount in dollars (e.g., 50.25). Don't include the $ symbol."
+      "title": "Enter the amount in your selected currency (e.g., 1500.75 or 100000). Don't include the currency symbol - it will be formatted automatically."
     },
     "#category": {
       "placement": "top",
