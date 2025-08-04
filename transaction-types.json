@@ -1,0 +1,37 @@
+{
+  "income": {
+    "label": "Income",
+    "icon": "bi-arrow-up",
+    "color": "success",
+    "types": [
+      { "value": "salary", "label": "💼 Salary", "emoji": "💼" },
+      { "value": "freelance", "label": "💻 Freelance", "emoji": "💻" },
+      { "value": "business", "label": "🏢 Business", "emoji": "🏢" },
+      { "value": "investment", "label": "📈 Investment", "emoji": "📈" },
+      { "value": "rental", "label": "🏠 Rental Income", "emoji": "🏠" },
+      { "value": "gift", "label": "🎁 Gift/Bonus", "emoji": "🎁" },
+      { "value": "refund", "label": "💸 Refund", "emoji": "💸" },
+      { "value": "other_income", "label": "💰 Other Income", "emoji": "💰" }
+    ]
+  },
+  "expense": {
+    "label": "Expense",
+    "icon": "bi-arrow-down", 
+    "color": "danger",
+    "types": [
+      { "value": "food", "label": "🍽️ Food & Dining", "emoji": "🍽️" },
+      { "value": "transportation", "label": "🚗 Transportation", "emoji": "🚗" },
+      { "value": "shopping", "label": "🛍️ Shopping", "emoji": "🛍️" },
+      { "value": "entertainment", "label": "🎬 Entertainment", "emoji": "🎬" },
+      { "value": "utilities", "label": "⚡ Utilities", "emoji": "⚡" },
+      { "value": "healthcare", "label": "🏥 Healthcare", "emoji": "🏥" },
+      { "value": "education", "label": "🎓 Education", "emoji": "🎓" },
+      { "value": "housing", "label": "🏠 Housing/Rent", "emoji": "🏠" },
+      { "value": "insurance", "label": "🛡️ Insurance", "emoji": "🛡️" },
+      { "value": "debt", "label": "💳 Debt Payment", "emoji": "💳" },
+      { "value": "savings", "label": "🏦 Savings", "emoji": "🏦" },
+      { "value": "travel", "label": "✈️ Travel", "emoji": "✈️" },
+      { "value": "other_expense", "label": "📝 Other Expense", "emoji": "📝" }
+    ]
+  }
+}

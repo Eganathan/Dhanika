@@ -37,15 +37,6 @@
                             <div class="mb-3">
                                 <select class="form-select" id="category" required>
                                     <option value="">Select Category</option>
-                                    <option value="food">🍽️ Food & Dining</option>
-                                    <option value="transportation">🚗 Transportation</option>
-                                    <option value="shopping">🛍️ Shopping</option>
-                                    <option value="entertainment">🎬 Entertainment</option>
-                                    <option value="utilities">⚡ Utilities</option>
-                                    <option value="healthcare">🏥 Healthcare</option>
-                                    <option value="education">📚 Education</option>
-                                    <option value="savings">💰 Savings</option>
-                                    <option value="other">📦 Other</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -107,12 +98,22 @@
                                 <label class="btn btn-outline-danger btn-sm" for="expense-filter">Expenses</label>
                             </div>
                         </div>
+                        
+                        <!-- Category Filter Tags -->
+                        <div class="mb-3">
+                            <small class="text-muted mb-2 d-block">Filter by category:</small>
+                            <div id="category-filters" class="d-flex flex-wrap gap-2"></div>
+                        </div>
                         <ul id="transaction-list" class="list-group"></ul>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Snackbar for notifications -->
+    <div id="snackbar" class="snackbar"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="vendor/bootstrap.bundle.min.js"></script>
     <script src="vendor/chart.js"></script>

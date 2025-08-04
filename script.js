@@ -13,35 +13,182 @@ document.addEventListener('DOMContentLoaded', () => {
     let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
     let chart;
     let editingTransactionId = null;
+    let transactionTypes = null;
+
+    // Snackbar function
+    function showSnackbar(message, type = 'success') {
+        const snackbar = document.getElementById('snackbar');
+        snackbar.textContent = message;
+        snackbar.className = `snackbar ${type}`;
+        snackbar.classList.add('show');
+        
+        setTimeout(() => {
+            snackbar.classList.remove('show');
+        }, 3000);
+    }
+
+    // Load transaction types from JSON
+    async function loadTransactionTypes() {
+        try {
+            const response = await fetch('./transaction-types.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            transactionTypes = await response.json();
+            console.log('Transaction types loaded successfully:', transactionTypes);
+            populateCategories('income'); // Default to income
+            setupTypeChangeListeners();
+        } catch (error) {
+            console.error('Failed to load transaction types:', error);
+            // Fallback to hardcoded categories
+            loadFallbackCategories();
+        }
+    }
+
+    // Fallback categories if JSON fails to load
+    function loadFallbackCategories() {
+        transactionTypes = {
+            "income": {
+                "types": [
+                    { "value": "salary", "label": "💼 Salary", "emoji": "💼" },
+                    { "value": "freelance", "label": "💻 Freelance", "emoji": "💻" },
+                    { "value": "other_income", "label": "💰 Other Income", "emoji": "💰" }
+                ]
+            },
+            "expense": {
+                "types": [
+                    { "value": "food", "label": "🍽️ Food & Dining", "emoji": "🍽️" },
+                    { "value": "transportation", "label": "🚗 Transportation", "emoji": "🚗" },
+                    { "value": "shopping", "label": "🛍️ Shopping", "emoji": "🛍️" },
+                    { "value": "other_expense", "label": "📝 Other Expense", "emoji": "📝" }
+                ]
+            }
+        };
+        populateCategories('income');
+        setupTypeChangeListeners();
+    }
+
+    // Populate category dropdown based on selected type
+    function populateCategories(type) {
+        const categorySelect = document.getElementById('category');
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
+        
+        if (transactionTypes && transactionTypes[type]) {
+            transactionTypes[type].types.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                categorySelect.appendChild(option);
+            });
+        }
+    }
+
+    // Setup listeners for income/expense toggle
+    function setupTypeChangeListeners() {
+        const typeRadios = document.querySelectorAll('input[name="type"]');
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                populateCategories(e.target.value);
+            });
+        });
+    }
+
+    // Get emoji for a category dynamically
+    function getCategoryEmoji(categoryValue) {
+        if (!transactionTypes) return '📦';
+        
+        // Search in both income and expense types
+        for (const typeKey of ['income', 'expense']) {
+            const category = transactionTypes[typeKey].types.find(type => type.value === categoryValue);
+            if (category) {
+                return category.emoji;
+            }
+        }
+        return '📦'; // Default emoji if not found
+    }
+
     let currentFilter = 'all';
+    let currentCategoryFilter = 'all';
     let currentChartType = 'overview';
-    
-    const categoryEmojis = {
-        food: '🍽️',
-        transportation: '🚗',
-        shopping: '🛍️',
-        entertainment: '🎬',
-        utilities: '⚡',
-        healthcare: '🏥',
-        education: '📚',
-        savings: '💰',
-        other: '📦'
-    };
+
+    // Render category filter tags
+    function renderCategoryFilters() {
+        const categoryFiltersContainer = document.getElementById('category-filters');
+        if (!categoryFiltersContainer) return;
+        
+        categoryFiltersContainer.innerHTML = '';
+        
+        // Add "All" button
+        const allButton = document.createElement('button');
+        allButton.className = `btn btn-sm ${currentCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}`;
+        allButton.textContent = 'All';
+        allButton.onclick = () => {
+            currentCategoryFilter = 'all';
+            renderTransactions();
+            renderCategoryFilters();
+        };
+        categoryFiltersContainer.appendChild(allButton);
+        
+        // Get unique categories from transactions based on current filter
+        let filteredTransactions = transactions;
+        if (currentFilter !== 'all') {
+            filteredTransactions = transactions.filter(t => t.type === currentFilter);
+        }
+        
+        const categories = [...new Set(filteredTransactions.map(t => t.category).filter(c => c))];
+        
+        categories.forEach(category => {
+            const button = document.createElement('button');
+            const emoji = getCategoryEmoji(category);
+            const isActive = currentCategoryFilter === category;
+            
+            // Determine transaction type for this category to set color
+            const categoryTransaction = transactions.find(t => t.category === category);
+            const transactionType = categoryTransaction ? categoryTransaction.type : 'expense';
+            
+            // Set button style based on transaction type and active state
+            let buttonClass;
+            if (isActive) {
+                buttonClass = transactionType === 'income' ? 'btn-success' : 'btn-danger';
+            } else {
+                buttonClass = transactionType === 'income' ? 'btn-outline-success' : 'btn-outline-danger';
+            }
+            
+            button.className = `btn btn-sm ${buttonClass}`;
+            button.innerHTML = `${emoji} ${category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ')}`;
+            button.onclick = () => {
+                currentCategoryFilter = category;
+                renderTransactions();
+                renderCategoryFilters();
+            };
+            categoryFiltersContainer.appendChild(button);
+        });
+    }
 
     function renderTransactions() {
         transactionList.innerHTML = '';
         
         const filteredTransactions = transactions.filter(transaction => {
-            if (currentFilter === 'all') return true;
-            return transaction.type === currentFilter;
+            // Filter by type (income/expense/all)
+            if (currentFilter !== 'all' && transaction.type !== currentFilter) {
+                return false;
+            }
+            // Filter by category
+            if (currentCategoryFilter !== 'all' && transaction.category !== currentCategoryFilter) {
+                return false;
+            }
+            return true;
         });
+        
+        // Render category filter tags
+        renderCategoryFilters();
         
         filteredTransactions.forEach(transaction => {
             const item = document.createElement('li');
             item.classList.add('list-group-item', `${transaction.type}-transaction`);
             item.dataset.id = transaction.id;
             
-            const categoryIcon = categoryEmojis[transaction.category] || '📦';
+            const categoryIcon = getCategoryEmoji(transaction.category);
             const tagsHtml = (transaction.tags || []).filter(tag => tag.trim()).map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('');
 
             item.innerHTML = `
@@ -129,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: 'doughnut',
                 data: {
                     labels: categories.map(cat => {
-                        const emoji = categoryEmojis[cat] || '📦';
+                        const emoji = getCategoryEmoji(cat);
                         return `${emoji} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
                     }),
                     datasets: [{
@@ -206,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             transaction.tags = tags;
             editingTransactionId = null;
             cancelEditBtn.style.display = 'none';
+            showSnackbar('Transaction updated successfully');
         } else {
             const transaction = {
                 id: Date.now(),
@@ -217,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: new Date().toISOString().split('T')[0]
             };
             transactions.push(transaction);
+            showSnackbar('Transaction created successfully');
         }
 
         renderTransactions();
@@ -241,9 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tags').value = (transaction.tags || []).join(', ');
             editingTransactionId = id;
             cancelEditBtn.style.display = 'block';
+            
+            // Scroll to form and focus on description field
+            document.getElementById('transaction-form').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+            setTimeout(() => {
+                document.getElementById('description').focus();
+            }, 300);
         } else if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-            transactions = transactions.filter(t => t.id !== id);
-            renderTransactions();
+            const transaction = transactions.find(t => t.id === id);
+            if (confirm(`Are you sure you want to delete "${transaction.description}"?`)) {
+                transactions = transactions.filter(t => t.id !== id);
+                renderTransactions();
+                showSnackbar('Transaction deleted successfully', 'error');
+            }
         }
     });
 
@@ -306,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('change', () => {
             if (button.checked) {
                 currentFilter = button.value;
+                currentCategoryFilter = 'all'; // Reset category filter when type filter changes
                 renderTransactions();
             }
         });
@@ -322,4 +485,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderTransactions();
     updateStats();
+    loadTransactionTypes();
 });
