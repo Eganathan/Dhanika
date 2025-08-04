@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Budget</title>
+    <link href="vendor/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="bg-primary text-white text-center p-3">
+        <h1>Personal Budget</h1>
+    </header>
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title">Add Transaction</h2>
+                        <form id="transaction-form">
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="amount" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="type" class="form-label">Type</label>
+                                <select class="form-select" id="type">
+                                    <option value="income">Income</option>
+                                    <option value="expense">Expense</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">Transactions</h2>
+                        <ul id="transaction-list" class="list-group"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">Budget Overview</h2>
+                        <canvas id="budget-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="vendor/bootstrap.bundle.min.js"></script>
+    <script src="vendor/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
