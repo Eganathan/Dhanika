@@ -1,0 +1,95 @@
+{
+  "header": {
+    "#export-btn-header": {
+      "placement": "bottom",
+      "title": "Create a password-protected backup of all your transactions. Your data is encrypted and never leaves your device."
+    },
+    "label[for=\"import-file-header\"]": {
+      "placement": "bottom",
+      "title": "Restore your transactions from an encrypted backup file. Enter the password you used when exporting."
+    }
+  },
+  
+  "transactionForm": {
+    "label[for=\"income\"]": {
+      "placement": "top",
+      "title": "Money coming in - salary, freelance, investments, etc."
+    },
+    "label[for=\"expense\"]": {
+      "placement": "top", 
+      "title": "Money going out - food, rent, shopping, bills, etc."
+    },
+    "#description": {
+      "placement": "top",
+      "title": "Brief description of the transaction (e.g., \"Grocery shopping\", \"Salary payment\")"
+    },
+    "#amount": {
+      "placement": "top",
+      "title": "Enter the amount in dollars (e.g., 50.25). Don't include the $ symbol."
+    },
+    "#category": {
+      "placement": "top",
+      "title": "Choose a category to help organize and analyze your spending patterns"
+    },
+    "#tags": {
+      "placement": "top",
+      "title": "Add tags separated by commas for better organization (e.g., \"work, travel, reimbursable\")"
+    },
+    "button[type=\"submit\"]": {
+      "placement": "top",
+      "title": "Save this transaction to your budget"
+    },
+    "#cancel-edit": {
+      "placement": "top",
+      "title": "Cancel editing and clear the form"
+    }
+  },
+  
+  "chartControls": {
+    "label[for=\"overview-chart\"]": {
+      "placement": "top",
+      "title": "Shows total income vs expenses overview"
+    },
+    "label[for=\"category-chart\"]": {
+      "placement": "top",
+      "title": "Breaks down expenses by category to see where you spend most"
+    }
+  },
+  
+  "filterButtons": {
+    "label[for=\"all-transactions\"]": {
+      "placement": "top",
+      "title": "Show all transactions - both income and expenses"
+    },
+    "label[for=\"income-filter\"]": {
+      "placement": "top",
+      "title": "Show only income transactions"
+    },
+    "label[for=\"expense-filter\"]": {
+      "placement": "top",
+      "title": "Show only expense transactions"
+    }
+  },
+  
+  "actionButtons": {
+    "#download-btn": {
+      "placement": "top",
+      "title": "Download a PDF summary report of your income, expenses, and balance"
+    },
+    "#tooltip-toggle": {
+      "placement": "bottom",
+      "title": "Toggle helpful tooltips on/off"
+    }
+  },
+  
+  "dynamicElements": {
+    ".edit-btn": {
+      "placement": "top",
+      "title": "Edit this transaction"
+    },
+    ".delete-btn": {
+      "placement": "top",
+      "title": "Delete this transaction permanently"
+    }
+  }
+}
