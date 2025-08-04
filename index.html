@@ -35,7 +35,21 @@
                                 <input type="number" class="form-control" id="amount" placeholder="Amount" required>
                             </div>
                             <div class="mb-3">
-                                <input type="text" class="form-control" id="tags" placeholder="Tags (comma-separated)">
+                                <select class="form-select" id="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="food">🍽️ Food & Dining</option>
+                                    <option value="transportation">🚗 Transportation</option>
+                                    <option value="shopping">🛍️ Shopping</option>
+                                    <option value="entertainment">🎬 Entertainment</option>
+                                    <option value="utilities">⚡ Utilities</option>
+                                    <option value="healthcare">🏥 Healthcare</option>
+                                    <option value="education">📚 Education</option>
+                                    <option value="savings">💰 Savings</option>
+                                    <option value="other">📦 Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" id="tags" placeholder="Tags (optional)">
                             </div>
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">Save Transaction</button>
@@ -44,18 +58,77 @@
                         </form>
                     </div>
                 </div>
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-body">
                         <h2 class="card-title">Budget Overview</h2>
+                        <div class="chart-tabs mb-3">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="chart-type" id="overview-chart" value="overview" checked>
+                                <label class="btn btn-outline-primary" for="overview-chart">Overview</label>
+                                <input type="radio" class="btn-check" name="chart-type" id="category-chart" value="category">
+                                <label class="btn btn-outline-primary" for="category-chart">Categories</label>
+                            </div>
+                        </div>
                         <canvas id="budget-chart"></canvas>
-                        <button class="btn btn-info w-100 mt-3" id="download-btn">Download Summary</button>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">Total Income:</span>
+                                <span class="text-success fw-bold" id="total-income">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">Total Expenses:</span>
+                                <span class="text-danger fw-bold" id="total-expenses">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-top pt-2">
+                                <span class="fw-bold">Balance:</span>
+                                <span class="fw-bold" id="balance">$0.00</span>
+                            </div>
+                            <button class="btn btn-info w-100" id="download-btn">Download Summary</button>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title mb-3">Quick Add Common Expenses</h2>
+                        <div class="quick-add-buttons row g-2 mb-4">
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="food" data-description="Lunch">
+                                    🍽️<br><small>Lunch</small>
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="transportation" data-description="Gas">
+                                    ⛽<br><small>Gas</small>
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="shopping" data-description="Groceries">
+                                    🛒<br><small>Groceries</small>
+                                </button>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <button class="btn btn-outline-secondary w-100 quick-add" data-category="entertainment" data-description="Coffee">
+                                    ☕<br><small>Coffee</small>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card">
                     <div class="card-body">
-                        <h2 class="card-title">Transactions</h2>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="card-title mb-0">Transactions</h2>
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="filter" id="all-transactions" value="all" checked>
+                                <label class="btn btn-outline-secondary btn-sm" for="all-transactions">All</label>
+                                <input type="radio" class="btn-check" name="filter" id="income-filter" value="income">
+                                <label class="btn btn-outline-success btn-sm" for="income-filter">Income</label>
+                                <input type="radio" class="btn-check" name="filter" id="expense-filter" value="expense">
+                                <label class="btn btn-outline-danger btn-sm" for="expense-filter">Expenses</label>
+                            </div>
+                        </div>
                         <ul id="transaction-list" class="list-group"></ul>
                     </div>
                 </div>
