@@ -2,7 +2,7 @@
     --primary-color: #007bff;
     --dark-bg: #121212;
     --card-bg: #1e1e1e;
-    --text-color: #ffffff;
+    --text-color: #e0e0e0;
     --muted-text-color: #a0a0a0;
     --border-color: #2e2e2e;
 }
@@ -21,6 +21,11 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: none;
+    color: var(--text-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color);
 }
 
 header {
@@ -38,6 +43,7 @@ header {
 .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
+    color: #ffffff;
 }
 
 .btn-primary:hover {

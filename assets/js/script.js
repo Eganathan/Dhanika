@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         data: [income, expense],
                         backgroundColor: ['#28a745', '#dc3545'],
-                        borderColor: '#fff',
+                        borderColor: 'var(--card-bg)',
                         borderWidth: 3
                     }]
                 },
@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         data: amounts,
                         backgroundColor: colors.slice(0, categories.length),
-                        borderColor: '#fff',
+                        borderColor: 'var(--card-bg)',
                         borderWidth: 3
                     }]
                 },
