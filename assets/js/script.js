@@ -99,7 +99,15 @@ class BudgetTracker {
         this.elements.exportBtnHeader?.addEventListener('click', () => this.exportData());
         this.elements.importFileHeader?.addEventListener('change', (e) => this.importData(e));
         this.elements.tooltipToggle?.addEventListener('click', () => this.toggleTooltips());
-        this.elements.searchInput?.addEventListener('input', (e) => this.handleSearchInput(e));
+        
+        // Search input event binding with debugging
+        if (this.elements.searchInput) {
+            console.log('Search input found, binding events');
+            this.elements.searchInput.addEventListener('input', (e) => this.handleSearchInput(e));
+            this.elements.searchInput.addEventListener('keyup', (e) => this.handleSearchInput(e));
+        } else {
+            console.warn('Search input not found in DOM');
+        }
         
         this.elements.filterButtons?.forEach(button => {
             button.addEventListener('change', (e) => this.filterTransactions(e.target.value));
@@ -443,11 +451,27 @@ class BudgetTracker {
 
     deleteTransaction(id) {
         try {
+            console.log('Attempting to delete transaction with ID:', id);
+            console.log('Current transactions:', this.state.transactions.length);
+            console.log('Transaction to delete:', this.state.transactions.find(t => t.id == id || t.id === id));
+            
             const originalLength = this.state.transactions.length;
-            this.state.transactions = this.state.transactions.filter(t => t.id !== id);
+            
+            // Handle both string and number IDs
+            this.state.transactions = this.state.transactions.filter(t => {
+                const match = t.id != id && t.id !== id; // Use != for loose comparison
+                if (!match) {
+                    console.log('Removing transaction:', t);
+                }
+                return match;
+            });
+            
+            console.log('Transactions after deletion:', this.state.transactions.length);
             
             if (this.state.transactions.length === originalLength) {
-                throw new Error('Transaction not found');
+                console.error('Transaction not found for deletion. ID:', id);
+                console.error('Available transaction IDs:', this.state.transactions.map(t => ({id: t.id, type: typeof t.id})));
+                throw new Error(`Transaction with ID ${id} not found`);
             }
             
             this.saveTransactions();
@@ -456,6 +480,7 @@ class BudgetTracker {
             this.updateSummary();
             this.setupCategoryFilters(); // Refresh category filters
             this.showSnackbar('Transaction deleted successfully', 'success');
+            console.log('Transaction deleted successfully');
         } catch (error) {
             console.error('Error deleting transaction:', error);
             this.showSnackbar('Failed to delete transaction. Please try again.', 'error');
@@ -620,6 +645,9 @@ class BudgetTracker {
     }
 
     createTransactionElement(transaction) {
+        // Debug transaction ID
+        console.log('Creating element for transaction:', transaction.id, 'Type:', typeof transaction.id);
+        
         const emoji = this.getCategoryEmoji(transaction.category);
         const formattedAmount = this.formatCurrency(transaction.amount);
         const formattedDate = new Date(transaction.date).toLocaleDateString();
@@ -628,8 +656,11 @@ class BudgetTracker {
                 `<span class="badge bg-secondary">${tag.trim()}</span>`
             ).join(' ') : '';
 
+        // Ensure ID is properly escaped for HTML attributes
+        const safeId = String(transaction.id).replace(/['"]/g, '');
+
         return `
-            <li class="list-group-item ${transaction.type}-item">
+            <li class="list-group-item ${transaction.type}-item" data-transaction-id="${safeId}">
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="transaction-left d-flex align-items-center flex-grow-1">
                         <span class="transaction-emoji me-2">${emoji}</span>
@@ -647,11 +678,11 @@ class BudgetTracker {
                         </span>
                         <div class="transaction-actions">
                             <button class="btn btn-sm btn-outline-primary edit-btn" 
-                                    data-action="edit" data-id="${transaction.id}">
+                                    data-action="edit" data-id="${safeId}" title="Edit transaction">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger delete-btn" 
-                                    data-action="delete" data-id="${transaction.id}">
+                                    data-action="delete" data-id="${safeId}" title="Delete transaction">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -662,7 +693,7 @@ class BudgetTracker {
     }
 
     getFilteredTransactions() {
-        return this.state.transactions.filter(transaction => {
+        const filtered = this.state.transactions.filter(transaction => {
             const typeMatch = this.state.currentFilter === 'all' || transaction.type === this.state.currentFilter;
             const categoryMatch = this.state.currentCategoryFilter === 'all' || transaction.category === this.state.currentCategoryFilter;
             
@@ -676,23 +707,42 @@ class BudgetTracker {
                 searchMatch = description.includes(searchTerm) || 
                              tags.includes(searchTerm) || 
                              category.includes(searchTerm);
+                
+                if (this.state.currentSearchTerm) {
+                    console.log(`Search matching for "${searchTerm}":`, {
+                        transaction: transaction.description,
+                        description: description.includes(searchTerm),
+                        tags: tags.includes(searchTerm),
+                        category: category.includes(searchTerm),
+                        match: searchMatch
+                    });
+                }
             }
             
             return typeMatch && categoryMatch && searchMatch;
         });
+        
+        if (this.state.currentSearchTerm) {
+            console.log(`Filtered ${filtered.length} transactions from ${this.state.transactions.length} total`);
+        }
+        
+        return filtered;
     }
 
     handleSearchInput(e) {
         const searchTerm = e.target.value.trim();
+        console.log('Search input:', searchTerm);
         this.state.currentSearchTerm = searchTerm;
         
         // Debounce search to avoid excessive filtering
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(() => {
+            console.log('Executing search for:', searchTerm);
             this.renderTransactions();
             
             if (searchTerm) {
                 const count = this.getFilteredTransactions().length;
+                console.log('Search results:', count);
                 this.showSnackbar(`Found ${count} transaction${count !== 1 ? 's' : ''} matching "${searchTerm}"`, 'info');
             }
         }, 300);
@@ -1076,7 +1126,8 @@ class BudgetTracker {
         
         // Add event delegation for transaction buttons
         this.handleTransactionClick = (e) => {
-            const button = e.target.closest('[data-action]');
+            // Check for direct button click or icon click inside button
+            const button = e.target.closest('[data-action]') || e.target.closest('button[data-action]');
             if (!button) return;
             
             e.preventDefault();
@@ -1085,23 +1136,46 @@ class BudgetTracker {
             const action = button.dataset.action;
             const id = button.dataset.id;
             
-            console.log('Transaction action:', action, 'ID:', id);
+            console.log('Transaction action:', action, 'ID:', id, 'Type:', typeof id);
+            console.log('Button element:', button);
+            console.log('Button datasets:', button.dataset);
+            console.log('Event target:', e.target);
+            
+            if (!id) {
+                console.error('No ID found on button:', button);
+                console.error('Button HTML:', button.outerHTML);
+                this.showSnackbar('Error: Transaction ID not found', 'error');
+                return;
+            }
             
             if (action === 'edit') {
                 this.editTransaction(id);
             } else if (action === 'delete') {
                 this.showDeleteConfirmation(id);
+            } else {
+                console.error('Unknown action:', action);
             }
         };
         
         if (this.elements.transactionList) {
             this.elements.transactionList.addEventListener('click', this.handleTransactionClick);
+            console.log('Event delegation setup for transaction list');
+        } else {
+            console.error('Transaction list element not found for event delegation');
         }
     }
 
     showDeleteConfirmation(id) {
-        const transaction = this.state.transactions.find(t => t.id === id);
-        if (!transaction) return;
+        console.log('Showing delete confirmation for ID:', id, 'Type:', typeof id);
+        
+        // Handle both string and number IDs
+        const transaction = this.state.transactions.find(t => t.id == id || t.id === id);
+        if (!transaction) {
+            console.error('Transaction not found for delete confirmation. ID:', id);
+            console.error('Available transactions:', this.state.transactions.map(t => ({id: t.id, desc: t.description})));
+            this.showSnackbar('Transaction not found. Please refresh the page.', 'error');
+            return;
+        }
 
         // Create modern confirmation dialog
         const modal = document.createElement('div');

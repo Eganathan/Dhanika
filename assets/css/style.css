@@ -148,12 +148,12 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
 }
 
 @media (min-width: 768px) {
     header {
-        padding: var(--spacing-lg) 0;
+        padding: var(--spacing-md) 0;
     }
     
     .header-buttons {
@@ -164,6 +164,43 @@ header {
     
     .header-buttons .btn-group {
         margin-right: var(--spacing-sm);
+    }
+}
+
+/* Compact header styling */
+header h1 {
+    font-size: var(--font-size-xl);
+    margin-bottom: 0;
+    line-height: 1.2;
+}
+
+header .text-muted {
+    font-size: var(--font-size-xs);
+    margin: 0;
+    opacity: 0.8;
+}
+
+@media (min-width: 768px) {
+    header h1 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    header .text-muted {
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* Compact header buttons */
+.header-buttons .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+}
+
+@media (min-width: 768px) {
+    .header-buttons .btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
     }
 }
 
@@ -1090,15 +1127,51 @@ body.loading::after {
         margin-bottom: var(--spacing-xs);
     }
     
-    .header-buttons {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        align-items: stretch;
+    /* Compact mobile header */
+    header {
+        padding: var(--spacing-xs) 0;
     }
     
-    .header-buttons .btn-group,
+    header h1 {
+        font-size: var(--font-size-lg);
+        margin-bottom: 2px;
+    }
+    
+    header .text-muted {
+        font-size: 10px;
+        line-height: 1;
+    }
+    
+    .header-buttons {
+        margin-top: var(--spacing-xs);
+    }
+    
+    .header-buttons .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 10px;
+        min-height: 28px;
+    }
+    
+    .header-buttons .dropdown-toggle::after {
+        margin-left: 0.25rem;
+    }
+    
+    /* Stack header buttons horizontally but compact */
+    .header-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        justify-content: center;
+    }
+    
+    .header-buttons .btn-group {
+        flex: none;
+        width: auto;
+    }
+    
     .header-buttons .dropdown {
-        width: 100%;
+        flex: none;
+        min-width: auto;
     }
     
     .snackbar {
