@@ -178,10 +178,19 @@
                             </div>
                         </div>
                         
-                        <!-- Category Filter Tags -->
+                        <!-- Search and Category Filters -->
                         <div class="mb-3">
-                            <small class="text-muted mb-2 d-block">Filter by category:</small>
-                            <div id="category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Category filters"></div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <small class="text-muted mb-2 d-block">Search transactions:</small>
+                                    <input type="text" id="transaction-search" class="form-control form-control-sm" 
+                                           placeholder="Search by description or tags..." aria-label="Search transactions">
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted mb-2 d-block">Filter by category:</small>
+                                    <div id="category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Category filters"></div>
+                                </div>
+                            </div>
                         </div>
                         <div id="empty-transaction-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
                             <i class="bi bi-card-list" aria-hidden="true"></i>
