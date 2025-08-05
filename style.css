@@ -23,6 +23,8 @@ header {
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1050;
 }
 
 .card:hover {
@@ -430,10 +432,44 @@ header {
     .transaction-actions {
         flex-direction: column;
         gap: 5px;
+        opacity: 1;
+        visibility: visible;
     }
-    
+
     .transaction-actions button {
         margin-left: 0;
+    }
+
+    .list-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .list-group-item .text-end {
+        text-align: left !important;
+        width: 100%;
+        margin-top: 10px;
+        align-items: flex-start !important;
+    }
+
+    .list-group-item .amount {
+        text-align: left;
+    }
+
+    header .col-md-6 {
+        text-align: center;
+    }
+
+    .d-flex.justify-content-md-end {
+        justify-content: center !important;
+    }
+
+    .equal-height-row {
+        flex-direction: column;
+    }
+
+    .equal-height-row .col-lg-6 {
+        margin-bottom: 1.5rem;
     }
 }
 
@@ -739,6 +775,11 @@ footer h5 {
         min-width: 100px;
         padding: 1.2rem 0.8rem;
     }
+
+    .header-buttons {
+        justify-content: center;
+        margin-top: 1rem;
+    }
 }
 
 /* Responsive Footer */
@@ -791,5 +832,30 @@ footer h5 {
     
     .footer-brand h6 {
         font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .badge-item {
+        flex-basis: calc(33.33% - 1rem);
+    }
+
+    .header .col-md-6 {
+        text-align: center;
+    }
+
+    .header-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header-buttons .btn-group,
+    .header-buttons .dropdown {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-buttons .btn {
+        width: 100%;
     }
 }
