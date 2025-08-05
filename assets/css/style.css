@@ -751,6 +751,8 @@ body.loading::after {
     font-size: var(--font-size-base);
     white-space: nowrap;
     margin-right: var(--spacing-xs);
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 0.5px;
 }
 
 .transaction-tags {
@@ -1413,4 +1415,20 @@ body.loading::after {
 #transaction-search:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Currency amount styling */
+#total-income,
+#total-expenses,
+#balance {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 0.5px;
+    font-size: var(--font-size-lg);
+}
+
+/* Make sure amounts in transaction list have consistent spacing */
+@media (min-width: 768px) {
+    .list-group-item .amount {
+        font-size: var(--font-size-lg);
+    }
 }

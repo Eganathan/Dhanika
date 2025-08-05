@@ -351,6 +351,13 @@ class BudgetTracker {
         if (this.elements.currentCurrencySpan) {
             this.elements.currentCurrencySpan.textContent = `${this.state.currentCurrencySymbol} ${this.state.currentCurrency}`;
         }
+        
+        // Update amount input placeholder with currency symbol
+        const amountInput = document.getElementById('amount');
+        if (amountInput) {
+            amountInput.placeholder = `Amount (e.g., ${this.state.currentCurrencySymbol}1,500.75)`;
+        }
+        
         this.updateSummary();
     }
 
