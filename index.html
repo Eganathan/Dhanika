@@ -110,6 +110,11 @@
                                 <label class="btn btn-outline-primary" for="category-chart">Categories</label>
                             </div>
                         </div>
+                        <div id="empty-chart-message" class="empty-state" style="display: none;">
+                            <i class="bi bi-bar-chart-line"></i>
+                            <p>No data to display</p>
+                            <small>Add a transaction to get started</small>
+                        </div>
                         <canvas id="budget-chart"></canvas>
                         <div class="mt-3">
                             <div class="d-flex justify-content-between mb-2">
@@ -151,6 +156,11 @@
                         <div class="mb-3">
                             <small class="text-muted mb-2 d-block">Filter by category:</small>
                             <div id="category-filters" class="d-flex flex-wrap gap-2"></div>
+                        <div id="empty-transaction-message" class="empty-state" style="display: none;">
+                            <i class="bi bi-journal-text"></i>
+                            <p>No transactions found</p>
+                            <small>Try a different filter or add a new transaction</small>
+                        </div>
                         </div>
                         <ul id="transaction-list" class="list-group"></ul>
                     </div>
