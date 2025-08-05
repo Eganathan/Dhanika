@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load transaction types from JSON
     async function loadTransactionTypes() {
         try {
-            const response = await fetch('./transaction-types.json');
+            const response = await fetch('assets/json/transaction-types.json');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load tooltip configuration from JSON file
     async function loadTooltipConfig() {
         try {
-            const response = await fetch('./tooltips.json');
+            const response = await fetch('assets/json/tooltips.json');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
