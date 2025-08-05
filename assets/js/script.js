@@ -33,8 +33,29 @@ class BudgetTracker {
     }
 
     initializeState() {
+        let transactions = [];
+        let tooltipsEnabled = true;
+        let selectedCurrency = 'INR';
+        let selectedCurrencySymbol = '₹';
+        
+        try {
+            const storedTransactions = localStorage.getItem('transactions');
+            transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+        } catch (error) {
+            console.error('Failed to load transactions from localStorage:', error);
+            // Don't show snackbar here as elements aren't initialized yet
+        }
+        
+        try {
+            tooltipsEnabled = localStorage.getItem('tooltipsEnabled') !== 'false';
+            selectedCurrency = localStorage.getItem('selectedCurrency') || 'INR';
+            selectedCurrencySymbol = localStorage.getItem('selectedCurrencySymbol') || '₹';
+        } catch (error) {
+            console.error('Failed to load settings from localStorage:', error);
+        }
+        
         this.state = {
-            transactions: JSON.parse(localStorage.getItem('transactions')) || [],
+            transactions,
             chart: null,
             editingTransactionId: null,
             transactionTypes: null,
@@ -42,11 +63,11 @@ class BudgetTracker {
             currentCategoryFilter: 'all',
             currentChartType: 'overview',
             tooltipConfig: {},
-            tooltipsEnabled: localStorage.getItem('tooltipsEnabled') !== 'false',
+            tooltipsEnabled,
             activeTooltipInstances: [],
             currentActiveTooltip: null,
-            currentCurrency: localStorage.getItem('selectedCurrency') || 'INR',
-            currentCurrencySymbol: localStorage.getItem('selectedCurrencySymbol') || '₹'
+            currentCurrency: selectedCurrency,
+            currentCurrencySymbol: selectedCurrencySymbol
         };
     }
 
@@ -221,7 +242,7 @@ class BudgetTracker {
             if (this.state.currentCurrency === 'INR') {
                 return `${this.state.currentCurrencySymbol}${this.formatIndianNumber(formattedAmount)}`;
             } else {
-                return `${this.state.currentCurrencySymbol}${formattedAmount.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}`;
+                return `${this.state.currentCurrencySymbol}${formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
             }
         }
     }
@@ -235,7 +256,7 @@ class BudgetTracker {
         if (integerPart.length > 3) {
             const lastThree = integerPart.slice(-3);
             const remaining = integerPart.slice(0, -3);
-            formatted = remaining.replace(/\\B(?=(\\d{2})+(?!\\d))/g, ',') + ',' + lastThree;
+            formatted = remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
         }
         
         return formatted + decimalPart;
@@ -256,8 +277,13 @@ class BudgetTracker {
         this.state.currentCurrency = currency;
         this.state.currentCurrencySymbol = symbol;
         
-        localStorage.setItem('selectedCurrency', currency);
-        localStorage.setItem('selectedCurrencySymbol', symbol);
+        try {
+            localStorage.setItem('selectedCurrency', currency);
+            localStorage.setItem('selectedCurrencySymbol', symbol);
+        } catch (error) {
+            console.error('Failed to save currency settings:', error);
+            this.showSnackbar('Currency changed but failed to save setting', 'warning');
+        }
         
         this.initializeCurrency();
         this.renderTransactions();
@@ -344,9 +370,13 @@ class BudgetTracker {
         form.querySelector('#tags').value = transaction.tags || '';
         
         this.populateCategories(transaction.type);
-        setTimeout(() => {
-            form.querySelector('#category').value = transaction.category;
-        }, 100);
+        // Use requestAnimationFrame for better timing
+        requestAnimationFrame(() => {
+            const categorySelect = form.querySelector('#category');
+            if (categorySelect) {
+                categorySelect.value = transaction.category;
+            }
+        });
 
         this.elements.cancelEditBtn.style.display = 'block';
         form.querySelector('button[type="submit"]').textContent = 'Update Transaction';
@@ -383,6 +413,9 @@ class BudgetTracker {
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .map(transaction => this.createTransactionElement(transaction))
             .join('');
+        
+        // Add event delegation for transaction buttons
+        this.setupTransactionEventDelegation();
     }
 
     createTransactionElement(transaction) {
@@ -411,11 +444,11 @@ class BudgetTracker {
                     </span>
                     <div class="transaction-actions" style="opacity: 0; transition: opacity 0.2s ease;">
                         <button class="btn btn-sm btn-outline-primary edit-btn me-1" 
-                                onclick="budgetTracker.editTransaction('${transaction.id}')">
+                                data-action="edit" data-id="${transaction.id}">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger delete-btn" 
-                                onclick="budgetTracker.deleteTransaction('${transaction.id}')">
+                                data-action="delete" data-id="${transaction.id}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -445,6 +478,13 @@ class BudgetTracker {
     updateChart() {
         if (!this.budgetChart) return;
         
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
+            this.showSnackbar('Chart library failed to load', 'error');
+            return;
+        }
+        
         const income = this.state.transactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
@@ -470,7 +510,12 @@ class BudgetTracker {
             ? this.getOverviewChartData(income, expenses)
             : this.getCategoryChartData();
 
-        this.state.chart = new Chart(this.budgetChart, chartData);
+        try {
+            this.state.chart = new Chart(this.budgetChart, chartData);
+        } catch (error) {
+            console.error('Failed to create chart:', error);
+            this.showSnackbar('Failed to load chart', 'error');
+        }
     }
 
     getOverviewChartData(income, expenses) {
@@ -555,7 +600,12 @@ class BudgetTracker {
     }
 
     saveTransactions() {
-        localStorage.setItem('transactions', JSON.stringify(this.state.transactions));
+        try {
+            localStorage.setItem('transactions', JSON.stringify(this.state.transactions));
+        } catch (error) {
+            console.error('Failed to save transactions to localStorage:', error);
+            this.showSnackbar('Failed to save data locally', 'error');
+        }
     }
 
     exportData() {
@@ -661,7 +711,12 @@ class BudgetTracker {
 
     toggleTooltips() {
         this.state.tooltipsEnabled = !this.state.tooltipsEnabled;
-        localStorage.setItem('tooltipsEnabled', this.state.tooltipsEnabled);
+        
+        try {
+            localStorage.setItem('tooltipsEnabled', this.state.tooltipsEnabled);
+        } catch (error) {
+            console.error('Failed to save tooltip setting:', error);
+        }
         
         if (this.state.tooltipsEnabled) {
             this.setupTooltips();
@@ -758,6 +813,30 @@ class BudgetTracker {
         });
     }
 
+    setupTransactionEventDelegation() {
+        // Remove existing delegation if any
+        if (this.elements.transactionList) {
+            this.elements.transactionList.removeEventListener('click', this.handleTransactionClick);
+        }
+        
+        // Add event delegation for transaction buttons
+        this.handleTransactionClick = (e) => {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+            
+            if (action === 'edit') {
+                this.editTransaction(id);
+            } else if (action === 'delete') {
+                this.deleteTransaction(id);
+            }
+        };
+        
+        this.elements.transactionList.addEventListener('click', this.handleTransactionClick);
+    }
+
     showLoading(show) {
         if (show) {
             document.body.classList.add('loading');
@@ -771,10 +850,8 @@ class BudgetTracker {
 let budgetTracker;
 document.addEventListener('DOMContentLoaded', () => {
     budgetTracker = new BudgetTracker();
-});
-
-// Add hover effects for transaction actions
-document.addEventListener('DOMContentLoaded', () => {
+    
+    // Add hover effects for transaction actions
     const style = document.createElement('style');
     style.textContent = `
         .list-group-item .transaction-actions {
