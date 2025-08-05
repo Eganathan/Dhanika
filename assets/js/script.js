@@ -1,60 +1,151 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const transactionForm = document.getElementById('transaction-form');
-    const transactionList = document.getElementById('transaction-list');
-    const budgetChart = document.getElementById('budget-chart').getContext('2d');
-    const cancelEditBtn = document.getElementById('cancel-edit');
-    const downloadBtn = document.getElementById('download-btn');
-    const exportBtnHeader = document.getElementById('export-btn-header');
-    const importFileHeader = document.getElementById('import-file-header');
-    const tooltipToggle = document.getElementById('tooltip-toggle');
-    const currencySelector = document.getElementById('currency-selector');
-    const currentCurrencySpan = document.getElementById('current-currency');
-    const totalIncomeEl = document.getElementById('total-income');
-    const totalExpensesEl = document.getElementById('total-expenses');
-    const balanceEl = document.getElementById('balance');
-    const filterButtons = document.querySelectorAll('input[name="filter"]');
-    const chartTypeButtons = document.querySelectorAll('input[name="chart-type"]');
-    const emptyChartMessage = document.getElementById('empty-chart-message');
-    const emptyTransactionMessage = document.getElementById('empty-transaction-message');
+class BudgetTracker {
+    constructor() {
+        this.initializeElements();
+        this.initializeState();
+        this.loadConfiguration();
+        this.bindEvents();
+        this.initialize();
+    }
 
-    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-    let chart;
-    let editingTransactionId = null;
-    let transactionTypes = null;
+    initializeElements() {
+        this.elements = {
+            transactionForm: document.getElementById('transaction-form'),
+            transactionList: document.getElementById('transaction-list'),
+            budgetChartCanvas: document.getElementById('budget-chart'),
+            cancelEditBtn: document.getElementById('cancel-edit'),
+            downloadBtn: document.getElementById('download-btn'),
+            exportBtnHeader: document.getElementById('export-btn-header'),
+            importFileHeader: document.getElementById('import-file-header'),
+            tooltipToggle: document.getElementById('tooltip-toggle'),
+            currencySelector: document.getElementById('currency-selector'),
+            currentCurrencySpan: document.getElementById('current-currency'),
+            totalIncomeEl: document.getElementById('total-income'),
+            totalExpensesEl: document.getElementById('total-expenses'),
+            balanceEl: document.getElementById('balance'),
+            filterButtons: document.querySelectorAll('input[name="filter"]'),
+            chartTypeButtons: document.querySelectorAll('input[name="chart-type"]'),
+            emptyChartMessage: document.getElementById('empty-chart-message'),
+            emptyTransactionMessage: document.getElementById('empty-transaction-message'),
+            snackbar: document.getElementById('snackbar')
+        };
+        
+        this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
+    }
 
-    // Snackbar function
-    function showSnackbar(message, type = 'success') {
-        const snackbar = document.getElementById('snackbar');
-        snackbar.textContent = message;
-        snackbar.className = `snackbar ${type}`;
-        snackbar.classList.add('show');
+    initializeState() {
+        this.state = {
+            transactions: JSON.parse(localStorage.getItem('transactions')) || [],
+            chart: null,
+            editingTransactionId: null,
+            transactionTypes: null,
+            currentFilter: 'all',
+            currentCategoryFilter: 'all',
+            currentChartType: 'overview',
+            tooltipConfig: {},
+            tooltipsEnabled: localStorage.getItem('tooltipsEnabled') !== 'false',
+            activeTooltipInstances: [],
+            currentActiveTooltip: null,
+            currentCurrency: localStorage.getItem('selectedCurrency') || 'INR',
+            currentCurrencySymbol: localStorage.getItem('selectedCurrencySymbol') || '₹'
+        };
+    }
+
+    async loadConfiguration() {
+        this.currencyConfig = {
+            'INR': { symbol: '₹', name: 'Indian Rupee', decimals: 2, locale: 'en-IN' },
+            'USD': { symbol: '$', name: 'US Dollar', decimals: 2, locale: 'en-US' },
+            'EUR': { symbol: '€', name: 'Euro', decimals: 2, locale: 'de-DE' },
+            'GBP': { symbol: '£', name: 'British Pound', decimals: 2, locale: 'en-GB' },
+            'JPY': { symbol: '¥', name: 'Japanese Yen', decimals: 0, locale: 'ja-JP' },
+            'SAR': { symbol: 'ر.س', name: 'Saudi Riyal', decimals: 2, locale: 'ar-SA' },
+            'AED': { symbol: 'د.إ', name: 'UAE Dirham', decimals: 2, locale: 'ar-AE' },
+            'CHF': { symbol: 'Fr', name: 'Swiss Franc', decimals: 2, locale: 'de-CH' },
+            'CNY': { symbol: '¥', name: 'Chinese Yuan', decimals: 2, locale: 'zh-CN' },
+            'CAD': { symbol: 'C$', name: 'Canadian Dollar', decimals: 2, locale: 'en-CA' },
+            'AUD': { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' }
+        };
+
+        await Promise.all([
+            this.loadTransactionTypes(),
+            this.loadTooltipConfig()
+        ]);
+    }
+
+    bindEvents() {
+        this.elements.transactionForm?.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
+        this.elements.cancelEditBtn?.addEventListener('click', () => this.cancelEdit());
+        this.elements.downloadBtn?.addEventListener('click', () => this.downloadSummary());
+        this.elements.exportBtnHeader?.addEventListener('click', () => this.exportData());
+        this.elements.importFileHeader?.addEventListener('change', (e) => this.importData(e));
+        this.elements.tooltipToggle?.addEventListener('click', () => this.toggleTooltips());
+        
+        this.elements.filterButtons?.forEach(button => {
+            button.addEventListener('change', (e) => this.filterTransactions(e.target.value));
+        });
+        
+        this.elements.chartTypeButtons?.forEach(button => {
+            button.addEventListener('change', (e) => this.changeChartType(e.target.value));
+        });
+
+        document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
+            item.addEventListener('click', (e) => this.changeCurrency(e));
+        });
+    }
+
+    async initialize() {
+        await this.loadConfiguration();
+        this.initializeCurrency();
+        this.setupTypeChangeListeners();
+        this.renderTransactions();
+        this.updateChart();
+        this.updateSummary();
+        this.setupTooltips();
+    }
+
+    showSnackbar(message, type = 'success') {
+        if (!this.elements.snackbar) return;
+        
+        this.elements.snackbar.textContent = message;
+        this.elements.snackbar.className = `snackbar ${type}`;
+        this.elements.snackbar.classList.add('show');
         
         setTimeout(() => {
-            snackbar.classList.remove('show');
+            this.elements.snackbar.classList.remove('show');
         }, 3000);
     }
 
-    // Load transaction types from JSON
-    async function loadTransactionTypes() {
+    async loadTransactionTypes() {
         try {
+            this.showLoading(true);
             const response = await fetch('assets/json/transaction-types.json');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            transactionTypes = await response.json();
-            console.log('Transaction types loaded successfully:', transactionTypes);
-            populateCategories('income'); // Default to income
-            setupTypeChangeListeners();
+            this.state.transactionTypes = await response.json();
+            this.populateCategories('income');
         } catch (error) {
             console.error('Failed to load transaction types:', error);
-            // Fallback to hardcoded categories
-            loadFallbackCategories();
+            this.loadFallbackCategories();
+        } finally {
+            this.showLoading(false);
         }
     }
 
-    // Fallback categories if JSON fails to load
-    function loadFallbackCategories() {
-        transactionTypes = {
+    async loadTooltipConfig() {
+        try {
+            const response = await fetch('assets/json/tooltips.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this.state.tooltipConfig = await response.json();
+        } catch (error) {
+            console.error('Failed to load tooltip config:', error);
+            this.state.tooltipConfig = {};
+        }
+    }
+
+    loadFallbackCategories() {
+        this.state.transactionTypes = {
             "income": {
                 "types": [
                     { "value": "salary", "label": "💼 Salary", "emoji": "💼" },
@@ -71,17 +162,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]
             }
         };
-        populateCategories('income');
-        setupTypeChangeListeners();
+        this.populateCategories('income');
     }
 
-    // Populate category dropdown based on selected type
-    function populateCategories(type) {
+    populateCategories(type) {
         const categorySelect = document.getElementById('category');
+        if (!categorySelect) return;
+        
         categorySelect.innerHTML = '<option value="">Select Category</option>';
         
-        if (transactionTypes && transactionTypes[type]) {
-            transactionTypes[type].types.forEach(category => {
+        if (this.state.transactionTypes?.[type]) {
+            this.state.transactionTypes[type].types.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.value;
                 option.textContent = category.label;
@@ -90,865 +181,610 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Setup listeners for income/expense toggle
-    function setupTypeChangeListeners() {
+    setupTypeChangeListeners() {
         const typeRadios = document.querySelectorAll('input[name="type"]');
         typeRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
-                populateCategories(e.target.value);
+                this.populateCategories(e.target.value);
             });
         });
     }
 
-    // Get emoji for a category dynamically
-    function getCategoryEmoji(categoryValue) {
-        if (!transactionTypes) return '📦';
+    getCategoryEmoji(categoryValue) {
+        if (!this.state.transactionTypes) return '📦';
         
-        // Search in both income and expense types
         for (const typeKey of ['income', 'expense']) {
-            const category = transactionTypes[typeKey].types.find(type => type.value === categoryValue);
+            const category = this.state.transactionTypes[typeKey]?.types?.find(
+                type => type.value === categoryValue
+            );
             if (category) {
                 return category.emoji;
             }
         }
-        return '📦'; // Default emoji if not found
+        return '📦';
     }
 
-    let currentFilter = 'all';
-    let currentCategoryFilter = 'all';
-    let currentChartType = 'overview';
-
-    // Tooltip configuration (loaded from JSON)
-    let tooltipConfig = {};
-    let tooltipsEnabled = localStorage.getItem('tooltipsEnabled') !== 'false'; // Default to true
-    let activeTooltipInstances = [];
-    let currentActiveTooltip = null;
-    
-    // Currency configuration
-    let currentCurrency = localStorage.getItem('selectedCurrency') || 'INR';
-    let currentCurrencySymbol = localStorage.getItem('selectedCurrencySymbol') || '₹';
-    
-    const currencyConfig = {
-        'INR': { symbol: '₹', name: 'Indian Rupee', decimals: 2, locale: 'en-IN' },
-        'USD': { symbol: '$', name: 'US Dollar', decimals: 2, locale: 'en-US' },
-        'EUR': { symbol: '€', name: 'Euro', decimals: 2, locale: 'de-DE' },
-        'GBP': { symbol: '£', name: 'British Pound', decimals: 2, locale: 'en-GB' },
-        'JPY': { symbol: '¥', name: 'Japanese Yen', decimals: 0, locale: 'ja-JP' },
-        'SAR': { symbol: 'ر.س', name: 'Saudi Riyal', decimals: 2, locale: 'ar-SA' },
-        'AED': { symbol: 'د.إ', name: 'UAE Dirham', decimals: 2, locale: 'ar-AE' },
-        'CHF': { symbol: 'Fr', name: 'Swiss Franc', decimals: 2, locale: 'de-CH' },
-        'CNY': { symbol: '¥', name: 'Chinese Yuan', decimals: 2, locale: 'zh-CN' },
-        'CAD': { symbol: 'C$', name: 'Canadian Dollar', decimals: 2, locale: 'en-CA' },
-        'AUD': { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' }
-    };
-
-    // Format amount with current currency and locale-specific formatting
-    function formatCurrency(amount) {
-        const config = currencyConfig[currentCurrency];
+    formatCurrency(amount) {
+        const config = this.currencyConfig[this.state.currentCurrency];
         const absAmount = Math.abs(amount);
         
         try {
-            // Use Intl.NumberFormat for proper locale formatting
             const formatter = new Intl.NumberFormat(config.locale, {
                 minimumFractionDigits: config.decimals,
                 maximumFractionDigits: config.decimals
             });
             
             const formattedNumber = formatter.format(absAmount);
-            return `${currentCurrencySymbol}${formattedNumber}`;
+            return `${this.state.currentCurrencySymbol}${formattedNumber}`;
         } catch (error) {
-            // Fallback to manual formatting if Intl is not supported
             const formattedAmount = absAmount.toFixed(config.decimals);
-            if (currentCurrency === 'INR') {
-                // Indian numbering system with commas
-                return `${currentCurrencySymbol}${formatIndianNumber(formattedAmount)}`;
+            if (this.state.currentCurrency === 'INR') {
+                return `${this.state.currentCurrencySymbol}${this.formatIndianNumber(formattedAmount)}`;
             } else {
-                // Standard thousand separators
-                return `${currentCurrencySymbol}${formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+                return `${this.state.currentCurrencySymbol}${formattedAmount.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}`;
             }
         }
     }
 
-    // Indian numbering system helper
-    function formatIndianNumber(num) {
+    formatIndianNumber(num) {
         const parts = num.split('.');
         const integerPart = parts[0];
         const decimalPart = parts[1] ? '.' + parts[1] : '';
         
-        // Indian numbering: first comma after 3 digits, then every 2 digits
         let formatted = integerPart;
         if (integerPart.length > 3) {
             const lastThree = integerPart.slice(-3);
             const remaining = integerPart.slice(0, -3);
-            formatted = remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+            formatted = remaining.replace(/\\B(?=(\\d{2})+(?!\\d))/g, ',') + ',' + lastThree;
         }
         
         return formatted + decimalPart;
     }
 
-    // Currency selection functionality
-    function initializeCurrency() {
-        currentCurrencySpan.textContent = `${currentCurrencySymbol} ${currentCurrency}`;
-        
-        // Add click listeners to dropdown items
-        document.querySelectorAll('.dropdown-item[data-currency]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const currency = e.target.dataset.currency;
-                const symbol = e.target.dataset.symbol;
-                
-                currentCurrency = currency;
-                currentCurrencySymbol = symbol;
-                
-                // Save to localStorage
-                localStorage.setItem('selectedCurrency', currency);
-                localStorage.setItem('selectedCurrencySymbol', symbol);
-                
-                // Update UI
-                currentCurrencySpan.textContent = `${symbol} ${currency}`;
-                
-                // Re-render all transactions and stats
-                renderTransactions();
-                
-                showSnackbar(`Currency changed to ${currencyConfig[currency].name}`);
-            });
-        });
+    initializeCurrency() {
+        if (this.elements.currentCurrencySpan) {
+            this.elements.currentCurrencySpan.textContent = `${this.state.currentCurrencySymbol} ${this.state.currentCurrency}`;
+        }
+        this.updateSummary();
     }
 
-    // Load tooltip configuration from JSON file
-    async function loadTooltipConfig() {
-        try {
-            const response = await fetch('assets/json/tooltips.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const tooltipData = await response.json();
-            
-            // Flatten the nested structure into a single object
-            tooltipConfig = {};
-            Object.values(tooltipData).forEach(section => {
-                Object.assign(tooltipConfig, section);
-            });
-            
-            console.log('Tooltip configuration loaded successfully');
-        } catch (error) {
-            console.error('Failed to load tooltip configuration:', error);
-            // Fallback to basic tooltips if JSON fails to load
-            tooltipConfig = {
-                '#export-btn-header': { placement: 'bottom', title: 'Export your data with password encryption' },
-                'label[for="import-file-header"]': { placement: 'bottom', title: 'Import encrypted data backup' }
-            };
+    changeCurrency(e) {
+        e.preventDefault();
+        const currency = e.target.dataset.currency;
+        const symbol = e.target.dataset.symbol;
+        
+        this.state.currentCurrency = currency;
+        this.state.currentCurrencySymbol = symbol;
+        
+        localStorage.setItem('selectedCurrency', currency);
+        localStorage.setItem('selectedCurrencySymbol', symbol);
+        
+        this.initializeCurrency();
+        this.renderTransactions();
+        this.showSnackbar(`Currency changed to ${currency}`, 'success');
+    }
+
+    handleTransactionSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const transaction = {
+            id: this.state.editingTransactionId || Date.now().toString(),
+            type: formData.get('type'),
+            description: formData.get('description')?.trim(),
+            amount: parseFloat(formData.get('amount')),
+            category: formData.get('category'),
+            tags: formData.get('tags')?.trim(),
+            date: new Date().toISOString()
+        };
+
+        if (!this.validateTransaction(transaction)) return;
+
+        if (this.state.editingTransactionId) {
+            this.updateTransaction(transaction);
+        } else {
+            this.addTransaction(transaction);
+        }
+
+        this.resetForm();
+        this.saveTransactions();
+        this.renderTransactions();
+        this.updateChart();
+        this.updateSummary();
+    }
+
+    validateTransaction(transaction) {
+        if (!transaction.description) {
+            this.showSnackbar('Please enter a description', 'error');
+            return false;
+        }
+        if (!transaction.amount || isNaN(transaction.amount) || transaction.amount <= 0) {
+            this.showSnackbar('Please enter a valid amount', 'error');
+            return false;
+        }
+        if (!transaction.category) {
+            this.showSnackbar('Please select a category', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    addTransaction(transaction) {
+        this.state.transactions.push(transaction);
+        this.showSnackbar('Transaction added successfully', 'success');
+    }
+
+    updateTransaction(transaction) {
+        const index = this.state.transactions.findIndex(t => t.id === transaction.id);
+        if (index !== -1) {
+            this.state.transactions[index] = transaction;
+            this.showSnackbar('Transaction updated successfully', 'success');
         }
     }
 
-    // Function to hide all active tooltips
-    function hideAllTooltips() {
-        activeTooltipInstances.forEach(tooltipInstance => {
-            try {
-                tooltipInstance.hide();
-            } catch (e) {
-                // Ignore errors if tooltip is already disposed
-            }
-        });
-        currentActiveTooltip = null;
+    deleteTransaction(id) {
+        this.state.transactions = this.state.transactions.filter(t => t.id !== id);
+        this.saveTransactions();
+        this.renderTransactions();
+        this.updateChart();
+        this.updateSummary();
+        this.showSnackbar('Transaction deleted successfully', 'success');
     }
 
-    // Function to apply tooltips from configuration
-    function initializeTooltips() {
-        // Clear existing tooltips
-        activeTooltipInstances.forEach(tooltip => {
-            try {
-                tooltip.dispose();
-            } catch (e) {
-                // Ignore errors
-            }
-        });
-        activeTooltipInstances = [];
+    editTransaction(id) {
+        const transaction = this.state.transactions.find(t => t.id === id);
+        if (!transaction) return;
 
-        if (!tooltipsEnabled) {
-            updateTooltipToggleButton();
+        this.state.editingTransactionId = id;
+        
+        const form = this.elements.transactionForm;
+        form.querySelector(`input[name="type"][value="${transaction.type}"]`).checked = true;
+        form.querySelector('#description').value = transaction.description;
+        form.querySelector('#amount').value = transaction.amount;
+        form.querySelector('#tags').value = transaction.tags || '';
+        
+        this.populateCategories(transaction.type);
+        setTimeout(() => {
+            form.querySelector('#category').value = transaction.category;
+        }, 100);
+
+        this.elements.cancelEditBtn.style.display = 'block';
+        form.querySelector('button[type="submit"]').textContent = 'Update Transaction';
+        
+        form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    cancelEdit() {
+        this.state.editingTransactionId = null;
+        this.resetForm();
+    }
+
+    resetForm() {
+        this.elements.transactionForm.reset();
+        this.elements.cancelEditBtn.style.display = 'none';
+        this.elements.transactionForm.querySelector('button[type="submit"]').textContent = 'Save Transaction';
+        this.elements.transactionForm.querySelector('input[name="type"][value="income"]').checked = true;
+        this.populateCategories('income');
+    }
+
+    renderTransactions() {
+        if (!this.elements.transactionList) return;
+        
+        const filteredTransactions = this.getFilteredTransactions();
+        
+        if (filteredTransactions.length === 0) {
+            this.elements.emptyTransactionMessage.style.display = 'block';
+            this.elements.transactionList.innerHTML = '';
             return;
         }
 
-        Object.keys(tooltipConfig).forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach(element => {
-                const config = tooltipConfig[selector];
-                element.setAttribute('data-bs-toggle', 'tooltip');
-                element.setAttribute('data-bs-placement', config.placement);
-                element.setAttribute('title', config.title);
-            });
-        });
-        
-        // Initialize Bootstrap tooltips with custom behavior
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-            const tooltipInstance = new bootstrap.Tooltip(tooltipTriggerEl, {
-                trigger: 'hover focus',
-                delay: { show: 500, hide: 100 }
-            });
-            
-            activeTooltipInstances.push(tooltipInstance);
-            
-            // Add event listeners for single tooltip visibility
-            tooltipTriggerEl.addEventListener('show.bs.tooltip', function() {
-                // Hide other tooltips when showing this one
-                if (currentActiveTooltip && currentActiveTooltip !== tooltipInstance) {
-                    currentActiveTooltip.hide();
-                }
-                currentActiveTooltip = tooltipInstance;
-            });
-            
-            tooltipTriggerEl.addEventListener('hidden.bs.tooltip', function() {
-                if (currentActiveTooltip === tooltipInstance) {
-                    currentActiveTooltip = null;
-                }
-            });
-        });
-        
-        updateTooltipToggleButton();
+        this.elements.emptyTransactionMessage.style.display = 'none';
+        this.elements.transactionList.innerHTML = filteredTransactions
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .map(transaction => this.createTransactionElement(transaction))
+            .join('');
     }
 
-    // Function to toggle tooltips on/off
-    function toggleTooltips() {
-        tooltipsEnabled = !tooltipsEnabled;
-        localStorage.setItem('tooltipsEnabled', tooltipsEnabled.toString());
-        
-        if (!tooltipsEnabled) {
-            hideAllTooltips();
-            // Remove all tooltip attributes
-            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
-                element.removeAttribute('data-bs-toggle');
-                element.removeAttribute('data-bs-placement');
-                element.removeAttribute('title');
-            });
-            // Dispose all tooltip instances
-            activeTooltipInstances.forEach(tooltip => {
-                try {
-                    tooltip.dispose();
-                } catch (e) {
-                    // Ignore errors
-                }
-            });
-            activeTooltipInstances = [];
-        } else {
-            initializeTooltips();
-        }
-        
-        updateTooltipToggleButton();
-        showSnackbar(tooltipsEnabled ? 'Tooltips enabled' : 'Tooltips disabled');
-    }
+    createTransactionElement(transaction) {
+        const emoji = this.getCategoryEmoji(transaction.category);
+        const formattedAmount = this.formatCurrency(transaction.amount);
+        const formattedDate = new Date(transaction.date).toLocaleDateString();
+        const tags = transaction.tags ? transaction.tags.split(',').map(tag => 
+            `<span class="badge bg-secondary">${tag.trim()}</span>`
+        ).join(' ') : '';
 
-    // Function to update tooltip toggle button appearance
-    function updateTooltipToggleButton() {
-        if (tooltipsEnabled) {
-            tooltipToggle.classList.remove('btn-outline-info');
-            tooltipToggle.classList.add('btn-info');
-            tooltipToggle.innerHTML = '<i class="bi bi-question-circle-fill"></i>';
-        } else {
-            tooltipToggle.classList.remove('btn-info');
-            tooltipToggle.classList.add('btn-outline-info');
-            tooltipToggle.innerHTML = '<i class="bi bi-question-circle"></i>';
-        }
-    }
-
-    // Function to hide tooltips on user input
-    function addInputListeners() {
-        // Hide tooltips when user starts typing in any input field
-        document.addEventListener('input', hideAllTooltips);
-        document.addEventListener('keydown', hideAllTooltips);
-        document.addEventListener('click', function(e) {
-            // Hide tooltips when clicking on form elements (but not tooltip triggers)
-            if (e.target.matches('input, select, textarea, button[type="submit"]')) {
-                hideAllTooltips();
-            }
-        });
-    }
-
-    // Encryption utilities
-    async function encryptData(data, password) {
-        const enc = new TextEncoder();
-        const keyMaterial = await window.crypto.subtle.importKey(
-            'raw',
-            enc.encode(password),
-            { name: 'PBKDF2' },
-            false,
-            ['deriveBits', 'deriveKey']
-        );
-        
-        const salt = window.crypto.getRandomValues(new Uint8Array(16));
-        const key = await window.crypto.subtle.deriveKey(
-            {
-                name: 'PBKDF2',
-                salt: salt,
-                iterations: 100000,
-                hash: 'SHA-256'
-            },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt']
-        );
-        
-        const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        const encrypted = await window.crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: iv },
-            key,
-            enc.encode(JSON.stringify(data))
-        );
-        
-        return {
-            encrypted: Array.from(new Uint8Array(encrypted)),
-            salt: Array.from(salt),
-            iv: Array.from(iv)
-        };
-    }
-
-    async function decryptData(encryptedData, password) {
-        const enc = new TextEncoder();
-        const dec = new TextDecoder();
-        
-        const keyMaterial = await window.crypto.subtle.importKey(
-            'raw',
-            enc.encode(password),
-            { name: 'PBKDF2' },
-            false,
-            ['deriveBits', 'deriveKey']
-        );
-        
-        const key = await window.crypto.subtle.deriveKey(
-            {
-                name: 'PBKDF2',
-                salt: new Uint8Array(encryptedData.salt),
-                iterations: 100000,
-                hash: 'SHA-256'
-            },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['decrypt']
-        );
-        
-        const decrypted = await window.crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: new Uint8Array(encryptedData.iv) },
-            key,
-            new Uint8Array(encryptedData.encrypted)
-        );
-        
-        return JSON.parse(dec.decode(decrypted));
-    }
-
-    // Export data with encryption
-    async function exportData() {
-        const password = prompt('Enter a password to encrypt your data:');
-        if (!password) return;
-        
-        try {
-            const exportData = {
-                transactions: transactions,
-                transactionTypes: transactionTypes,
-                currency: currentCurrency,
-                currencySymbol: currentCurrencySymbol,
-                exportDate: new Date().toISOString(),
-                version: '1.0'
-            };
-            
-            const encrypted = await encryptData(exportData, password);
-            const blob = new Blob([JSON.stringify(encrypted)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `budget-export-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showSnackbar('Data exported successfully!');
-        } catch (error) {
-            console.error('Export error:', error);
-            showSnackbar('Export failed. Please try again.', 'error');
-        }
-    }
-
-    // Import data with decryption
-    async function importData(file) {
-        const password = prompt('Enter the password to decrypt your data:');
-        if (!password) return;
-        
-        try {
-            const text = await file.text();
-            const encryptedData = JSON.parse(text);
-            const decrypted = await decryptData(encryptedData, password);
-            
-            if (decrypted.transactions && Array.isArray(decrypted.transactions)) {
-                if (confirm(`This will replace your current ${transactions.length} transactions with ${decrypted.transactions.length} imported transactions. Continue?`)) {
-                    transactions = decrypted.transactions;
-                    if (decrypted.transactionTypes) {
-                        transactionTypes = decrypted.transactionTypes;
-                    }
-                    if (decrypted.currency && decrypted.currencySymbol) {
-                        currentCurrency = decrypted.currency;
-                        currentCurrencySymbol = decrypted.currencySymbol;
-                        localStorage.setItem('selectedCurrency', currentCurrency);
-                        localStorage.setItem('selectedCurrencySymbol', currentCurrencySymbol);
-                        currentCurrencySpan.textContent = `${currentCurrencySymbol} ${currentCurrency}`;
-                    }
-                    renderTransactions();
-                    showSnackbar(`Successfully imported ${transactions.length} transactions!`);
-                }
-            } else {
-                throw new Error('Invalid file format');
-            }
-        } catch (error) {
-            console.error('Import error:', error);
-            showSnackbar('Import failed. Check password and file format.', 'error');
-        }
-    }
-
-    // Render category filter tags
-    function renderCategoryFilters() {
-        const categoryFiltersContainer = document.getElementById('category-filters');
-        if (!categoryFiltersContainer) return;
-        
-        categoryFiltersContainer.innerHTML = '';
-        
-        // Add "All" button
-        const allButton = document.createElement('button');
-        allButton.className = `btn btn-sm ${currentCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}`;
-        allButton.textContent = 'All';
-        allButton.onclick = () => {
-            currentCategoryFilter = 'all';
-            renderTransactions();
-            renderCategoryFilters();
-        };
-        categoryFiltersContainer.appendChild(allButton);
-        
-        // Get unique categories from transactions based on current filter
-        let filteredTransactions = transactions;
-        if (currentFilter !== 'all') {
-            filteredTransactions = transactions.filter(t => t.type === currentFilter);
-        }
-        
-        const categories = [...new Set(filteredTransactions.map(t => t.category).filter(c => c))];
-        
-        categories.forEach(category => {
-            const button = document.createElement('button');
-            const emoji = getCategoryEmoji(category);
-            const isActive = currentCategoryFilter === category;
-            
-            // Determine transaction type for this category to set color
-            const categoryTransaction = transactions.find(t => t.category === category);
-            const transactionType = categoryTransaction ? categoryTransaction.type : 'expense';
-            
-            // Set button style based on transaction type and active state
-            let buttonClass;
-            if (isActive) {
-                buttonClass = transactionType === 'income' ? 'btn-success' : 'btn-danger';
-            } else {
-                buttonClass = transactionType === 'income' ? 'btn-outline-success' : 'btn-outline-danger';
-            }
-            
-            button.className = `btn btn-sm ${buttonClass}`;
-            button.innerHTML = `${emoji} ${category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ')}`;
-            button.onclick = () => {
-                currentCategoryFilter = category;
-                renderTransactions();
-                renderCategoryFilters();
-            };
-            categoryFiltersContainer.appendChild(button);
-        });
-    }
-
-    function renderTransactions() {
-        transactionList.innerHTML = '';
-        
-        const filteredTransactions = transactions.filter(transaction => {
-            // Filter by type (income/expense/all)
-            if (currentFilter !== 'all' && transaction.type !== currentFilter) {
-                return false;
-            }
-            // Filter by category
-            if (currentCategoryFilter !== 'all' && transaction.category !== currentCategoryFilter) {
-                return false;
-            }
-            return true;
-        });
-        
-        // Render category filter tags
-        renderCategoryFilters();
-
-        if (filteredTransactions.length === 0) {
-            transactionList.style.display = 'none';
-            emptyTransactionMessage.style.display = 'block';
-        } else {
-            transactionList.style.display = 'block';
-            emptyTransactionMessage.style.display = 'none';
-        }
-        
-        filteredTransactions.forEach(transaction => {
-            const item = document.createElement('li');
-            item.classList.add('list-group-item', `${transaction.type}-transaction`);
-            item.dataset.id = transaction.id;
-            
-            const categoryIcon = getCategoryEmoji(transaction.category);
-            const tagsHtml = (transaction.tags || []).filter(tag => tag.trim()).map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('');
-
-            item.innerHTML = `
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1">
-                            <span class="me-2" style="font-size: 1.2em;">${categoryIcon}</span>
-                            <h5 class="mb-0">${transaction.description}</h5>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            ${transaction.category ? `<span class="badge bg-light text-dark me-2">${transaction.category}</span>` : ''}
-                            ${tagsHtml}
-                        </div>
+        return `
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="me-2">${emoji}</span>
+                        <div class="fw-bold">${transaction.description}</div>
                     </div>
-                    <div class="text-end d-flex flex-column align-items-end">
-                        <p class="amount ${transaction.type} mb-1 fs-5">${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}</p>
-                        <div class="transaction-actions">
-                            <button class="btn btn-sm btn-outline-primary edit-btn"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn"><i class="bi bi-trash"></i></button>
-                        </div>
+                    <div class="d-flex align-items-center gap-2 text-muted small">
+                        <span>${formattedDate}</span>
+                        ${tags}
                     </div>
                 </div>
-            `;
-            transactionList.appendChild(item);
+                <div class="d-flex align-items-center gap-2">
+                    <span class="amount ${transaction.type} fw-bold">
+                        ${transaction.type === 'expense' ? '-' : '+'}${formattedAmount}
+                    </span>
+                    <div class="transaction-actions" style="opacity: 0; transition: opacity 0.2s ease;">
+                        <button class="btn btn-sm btn-outline-primary edit-btn me-1" 
+                                onclick="budgetTracker.editTransaction('${transaction.id}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-btn" 
+                                onclick="budgetTracker.deleteTransaction('${transaction.id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </li>
+        `;
+    }
+
+    getFilteredTransactions() {
+        return this.state.transactions.filter(transaction => {
+            const typeMatch = this.state.currentFilter === 'all' || transaction.type === this.state.currentFilter;
+            const categoryMatch = this.state.currentCategoryFilter === 'all' || transaction.category === this.state.currentCategoryFilter;
+            return typeMatch && categoryMatch;
         });
-        
-        updateChart();
-        updateStats();
-        updateLocalStorage();
-        
-        // Apply tooltips to dynamically created transaction buttons
-        if (tooltipsEnabled) {
-            document.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => {
-                const btnClass = btn.classList.contains('edit-btn') ? '.edit-btn' : '.delete-btn';
-                const config = tooltipConfig[btnClass];
-                if (config && !btn.hasAttribute('data-bs-toggle')) {
-                    btn.setAttribute('data-bs-toggle', 'tooltip');
-                    btn.setAttribute('data-bs-placement', config.placement);
-                    btn.setAttribute('title', config.title);
-                    
-                    const tooltipInstance = new bootstrap.Tooltip(btn, {
-                        trigger: 'hover focus',
-                        delay: { show: 500, hide: 100 }
-                    });
-                    
-                    activeTooltipInstances.push(tooltipInstance);
-                    
-                    // Add event listeners for single tooltip visibility
-                    btn.addEventListener('show.bs.tooltip', function() {
-                        if (currentActiveTooltip && currentActiveTooltip !== tooltipInstance) {
-                            currentActiveTooltip.hide();
-                        }
-                        currentActiveTooltip = tooltipInstance;
-                    });
-                    
-                    btn.addEventListener('hidden.bs.tooltip', function() {
-                        if (currentActiveTooltip === tooltipInstance) {
-                            currentActiveTooltip = null;
-                        }
-                    });
-                }
-            });
-        }
     }
 
-    function updateChart() {
-        if (chart) {
-            chart.destroy();
-        }
+    filterTransactions(filter) {
+        this.state.currentFilter = filter;
+        this.renderTransactions();
+    }
 
-        const hasTransactions = transactions.length > 0;
-        budgetChart.canvas.style.display = hasTransactions ? 'block' : 'none';
-        emptyChartMessage.style.display = hasTransactions ? 'none' : 'block';
+    changeChartType(type) {
+        this.state.currentChartType = type;
+        this.updateChart();
+    }
 
-        if (!hasTransactions) {
+    updateChart() {
+        if (!this.budgetChart) return;
+        
+        const income = this.state.transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const expenses = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        if (income === 0 && expenses === 0) {
+            this.elements.emptyChartMessage.style.display = 'block';
+            this.elements.budgetChartCanvas.style.display = 'none';
             return;
         }
-        
-        if (currentChartType === 'overview') {
-            const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-            const expense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
-            
-            chart = new Chart(budgetChart, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Income', 'Expense'],
-                    datasets: [{
-                        data: [income, expense],
-                        backgroundColor: ['#28a745', '#dc3545'],
-                        borderColor: 'var(--card-bg)',
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.label + ': ' + formatCurrency(context.parsed);
-                                }
-                            }
-                        }
+
+        this.elements.emptyChartMessage.style.display = 'none';
+        this.elements.budgetChartCanvas.style.display = 'block';
+
+        if (this.state.chart) {
+            this.state.chart.destroy();
+        }
+
+        const chartData = this.state.currentChartType === 'overview' 
+            ? this.getOverviewChartData(income, expenses)
+            : this.getCategoryChartData();
+
+        this.state.chart = new Chart(this.budgetChart, chartData);
+    }
+
+    getOverviewChartData(income, expenses) {
+        return {
+            type: 'doughnut',
+            data: {
+                labels: ['Income', 'Expenses'],
+                datasets: [{
+                    data: [income, expenses],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderColor: ['#059669', '#dc2626'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#f1f5f9' }
                     }
                 }
-            });
-        } else {
-            const expensesByCategory = {};
-            transactions.filter(t => t.type === 'expense').forEach(t => {
-                const category = t.category || 'other';
-                expensesByCategory[category] = (expensesByCategory[category] || 0) + t.amount;
-            });
-            
-            const categories = Object.keys(expensesByCategory);
-            const amounts = Object.values(expensesByCategory);
-            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0'];
-            
-            chart = new Chart(budgetChart, {
-                type: 'doughnut',
-                data: {
-                    labels: categories.map(cat => {
-                        const emoji = getCategoryEmoji(cat);
-                        return `${emoji} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
-                    }),
-                    datasets: [{
-                        data: amounts,
-                        backgroundColor: colors.slice(0, categories.length),
-                        borderColor: 'var(--card-bg)',
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 15,
-                                usePointStyle: true,
-                                font: {
-                                    size: 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const total = amounts.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-    
-    function updateStats() {
-        const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-        const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
-        const balance = income - expenses;
-        
-        totalIncomeEl.textContent = formatCurrency(income);
-        totalExpensesEl.textContent = formatCurrency(expenses);
-        balanceEl.textContent = formatCurrency(balance);
-        balanceEl.className = 'fw-bold ' + (balance >= 0 ? 'text-success' : 'text-danger');
-    }
-
-    function updateLocalStorage() {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-
-    transactionForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const description = document.getElementById('description').value;
-        const amount = parseFloat(document.getElementById('amount').value);
-        const type = document.querySelector('input[name="type"]:checked').value;
-        const category = document.getElementById('category').value;
-        const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
-
-        if (description.trim() === '' || isNaN(amount) || !category) {
-            document.getElementById('category').classList.add('is-invalid');
-            return;
-        }
-        document.getElementById('category').classList.remove('is-invalid');
-
-        if (editingTransactionId) {
-            const transaction = transactions.find(t => t.id === editingTransactionId);
-            transaction.description = description;
-            transaction.amount = amount;
-            transaction.type = type;
-            transaction.category = category;
-            transaction.tags = tags;
-            editingTransactionId = null;
-            cancelEditBtn.style.display = 'none';
-            showSnackbar('Transaction updated successfully');
-        } else {
-            const transaction = {
-                id: Date.now(),
-                description,
-                amount,
-                type,
-                category,
-                tags,
-                date: new Date().toISOString().split('T')[0]
-            };
-            transactions.push(transaction);
-            showSnackbar('Transaction created successfully');
-        }
-
-        renderTransactions();
-        transactionForm.reset();
-        document.getElementById('income').checked = true;
-        document.getElementById('category').value = '';
-        document.getElementById('category').classList.remove('is-invalid');
-    });
-
-    transactionList.addEventListener('click', e => {
-        const listItem = e.target.closest('li');
-        if (!listItem) return;
-        const id = parseInt(listItem.dataset.id);
-
-        if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
-            const transaction = transactions.find(t => t.id === id);
-            document.getElementById('transaction-id').value = transaction.id;
-            document.getElementById('description').value = transaction.description;
-            document.getElementById('amount').value = transaction.amount;
-            document.querySelector(`input[name="type"][value="${transaction.type}"]`).checked = true;
-            document.getElementById('category').value = transaction.category || '';
-            document.getElementById('tags').value = (transaction.tags || []).join(', ');
-            editingTransactionId = id;
-            cancelEditBtn.style.display = 'block';
-            
-            // Scroll to form and focus on description field
-            document.getElementById('transaction-form').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-            setTimeout(() => {
-                document.getElementById('description').focus();
-            }, 300);
-        } else if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-            const transaction = transactions.find(t => t.id === id);
-            if (confirm(`Are you sure you want to delete "${transaction.description}"?`)) {
-                transactions = transactions.filter(t => t.id !== id);
-                renderTransactions();
-                showSnackbar('Transaction deleted successfully', 'error');
             }
+        };
+    }
+
+    getCategoryChartData() {
+        const categoryTotals = {};
+        this.state.transactions
+            .filter(t => t.type === 'expense')
+            .forEach(t => {
+                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+            });
+
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+        
+        return {
+            type: 'pie',
+            data: {
+                labels: Object.keys(categoryTotals),
+                datasets: [{
+                    data: Object.values(categoryTotals),
+                    backgroundColor: colors.slice(0, Object.keys(categoryTotals).length),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        };
+    }
+
+    updateSummary() {
+        const income = this.state.transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const expenses = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const balance = income - expenses;
+
+        if (this.elements.totalIncomeEl) {
+            this.elements.totalIncomeEl.textContent = this.formatCurrency(income);
         }
-    });
+        if (this.elements.totalExpensesEl) {
+            this.elements.totalExpensesEl.textContent = this.formatCurrency(expenses);
+        }
+        if (this.elements.balanceEl) {
+            this.elements.balanceEl.textContent = this.formatCurrency(balance);
+            this.elements.balanceEl.className = balance >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        }
+    }
 
-    cancelEditBtn.addEventListener('click', () => {
-        editingTransactionId = null;
-        transactionForm.reset();
-        document.getElementById('income').checked = true;
-        document.getElementById('category').classList.remove('is-invalid');
-        cancelEditBtn.style.display = 'none';
-    });
+    saveTransactions() {
+        localStorage.setItem('transactions', JSON.stringify(this.state.transactions));
+    }
 
-    downloadBtn.addEventListener('click', () => {
-        const incomes = transactions.filter(t => t.type === 'income');
-        const expenses = transactions.filter(t => t.type === 'expense');
-        const totalIncome = incomes.reduce((acc, t) => acc + t.amount, 0);
-        const totalExpense = expenses.reduce((acc, t) => acc + t.amount, 0);
-        const balance = totalIncome - totalExpense;
+    exportData() {
+        const data = {
+            transactions: this.state.transactions,
+            currency: this.state.currentCurrency,
+            currencySymbol: this.state.currentCurrencySymbol,
+            exportDate: new Date().toISOString()
+        };
 
-        let report = `
-            <style>
-                body { font-family: sans-serif; margin: 2rem; }
-                h1, h2 { color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                .total { font-weight: bold; }
-            </style>
-            <h1>Budget Summary</h1>
-            <h2>Incomes</h2>
-            <table>
-                <thead><tr><th>Description</th><th>Amount</th></tr></thead>
-                <tbody>
-                    ${incomes.map(t => `<tr><td>${t.description}</td><td>${formatCurrency(t.amount)}</td></tr>`).join('')}
-                    <tr class="total"><td>Total</td><td>${formatCurrency(totalIncome)}</td></tr>
-                </tbody>
-            </table>
-            <h2>Expenses</h2>
-            <table>
-                <thead><tr><th>Description</th><th>Amount</th></tr></thead>
-                <tbody>
-                    ${expenses.map(t => `<tr><td>${t.description}</td><td>${formatCurrency(t.amount)}</td></tr>`).join('')}
-                    <tr class="total"><td>Total</td><td>${formatCurrency(totalExpense)}</td></tr>
-                </tbody>
-            </table>
-            <h2>Summary</h2>
-            <table>
-                <tbody>
-                    <tr><td>Total Income</td><td>${formatCurrency(totalIncome)}</td></tr>
-                    <tr><td>Total Expense</td><td>${formatCurrency(totalExpense)}</td></tr>
-                    <tr class="total"><td>Balance</td><td>${formatCurrency(balance)}</td></tr>
-                </tbody>
-            </table>
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `budget-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        this.showSnackbar('Data exported successfully', 'success');
+    }
+
+    importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                if (data.transactions && Array.isArray(data.transactions)) {
+                    this.state.transactions = data.transactions;
+                    
+                    if (data.currency) {
+                        this.state.currentCurrency = data.currency;
+                        localStorage.setItem('selectedCurrency', data.currency);
+                    }
+                    
+                    if (data.currencySymbol) {
+                        this.state.currentCurrencySymbol = data.currencySymbol;
+                        localStorage.setItem('selectedCurrencySymbol', data.currencySymbol);
+                    }
+                    
+                    this.saveTransactions();
+                    this.initializeCurrency();
+                    this.renderTransactions();
+                    this.updateChart();
+                    this.updateSummary();
+                    
+                    this.showSnackbar('Data imported successfully', 'success');
+                } else {
+                    this.showSnackbar('Invalid file format', 'error');
+                }
+            } catch (error) {
+                this.showSnackbar('Error reading file', 'error');
+            }
+        };
+        
+        reader.onerror = () => {
+            this.showSnackbar('Error reading file', 'error');
+        };
+        
+        reader.readAsText(file);
+        e.target.value = '';
+    }
+
+    downloadSummary() {
+        const income = this.state.transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const expenses = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+            
+        const balance = income - expenses;
+
+        const summaryHtml = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h1>Budget Summary</h1>
+                <div style="margin: 20px 0;">
+                    <h3>Total Income: ${this.formatCurrency(income)}</h3>
+                    <h3>Total Expenses: ${this.formatCurrency(expenses)}</h3>
+                    <h3 style="color: ${balance >= 0 ? 'green' : 'red'}">Balance: ${this.formatCurrency(balance)}</h3>
+                </div>
+                <p>Generated on: ${new Date().toLocaleDateString()}</p>
+            </div>
         `;
 
-        html2pdf().from(report).save('budget-summary.pdf');
-    });
+        const opt = {
+            margin: 1,
+            filename: `budget-summary-${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
 
-    exportBtnHeader.addEventListener('click', exportData);
+        html2pdf().from(summaryHtml).set(opt).save();
+        this.showSnackbar('Summary downloaded successfully', 'success');
+    }
 
-    importFileHeader.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            importData(file);
-            e.target.value = '';
+    toggleTooltips() {
+        this.state.tooltipsEnabled = !this.state.tooltipsEnabled;
+        localStorage.setItem('tooltipsEnabled', this.state.tooltipsEnabled);
+        
+        if (this.state.tooltipsEnabled) {
+            this.setupTooltips();
+            this.showSnackbar('Tooltips enabled', 'success');
+        } else {
+            this.clearTooltips();
+            this.showSnackbar('Tooltips disabled', 'success');
         }
-    });
+    }
 
-    tooltipToggle.addEventListener('click', toggleTooltips);
-    
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('change', () => {
-            if (button.checked) {
-                currentFilter = button.value;
-                currentCategoryFilter = 'all'; // Reset category filter when type filter changes
-                renderTransactions();
-            }
+    setupTooltips() {
+        if (!this.state.tooltipsEnabled || !this.state.tooltipConfig) return;
+        
+        this.clearTooltips();
+        
+        Object.values(this.state.tooltipConfig).forEach(section => {
+            Object.entries(section).forEach(([selector, config]) => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    this.createTooltip(element, config.title, config.placement);
+                });
+            });
         });
-    });
-    
-    chartTypeButtons.forEach(button => {
-        button.addEventListener('change', () => {
-            if (button.checked) {
-                currentChartType = button.value;
-                updateChart();
-            }
-        });
-    });
+    }
 
-    renderTransactions();
-    updateStats();
-    loadTransactionTypes();
-    initializeCurrency();
-    
-    // Load tooltip configuration and initialize all tooltips
-    loadTooltipConfig().then(() => {
-        initializeTooltips();
-        addInputListeners();
-    });
+    createTooltip(element, title, placement = 'top') {
+        if (!element || !title) return;
+        
+        let tooltip;
+        
+        const showTooltip = (e) => {
+            tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = title;
+            tooltip.style.cssText = `
+                position: absolute;
+                background: var(--card-bg);
+                color: var(--text-color);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                border: 1px solid var(--border-color);
+                box-shadow: var(--shadow-lg);
+                z-index: 1000;
+                max-width: 200px;
+                word-wrap: break-word;
+                opacity: 0;
+                transition: opacity 0.2s;
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            
+            let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+            let top = placement === 'top' ? rect.top - tooltipRect.height - 8 : rect.bottom + 8;
+            
+            left = Math.max(8, Math.min(left, window.innerWidth - tooltipRect.width - 8));
+            
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+            
+            setTimeout(() => tooltip.style.opacity = '1', 10);
+        };
+        
+        const hideTooltip = () => {
+            if (tooltip) {
+                tooltip.style.opacity = '0';
+                setTimeout(() => {
+                    if (tooltip && tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                }, 200);
+                tooltip = null;
+            }
+        };
+        
+        element.addEventListener('mouseenter', showTooltip);
+        element.addEventListener('mouseleave', hideTooltip);
+        
+        this.state.activeTooltipInstances.push({ element, showTooltip, hideTooltip });
+    }
+
+    clearTooltips() {
+        this.state.activeTooltipInstances.forEach(({ element, showTooltip, hideTooltip }) => {
+            element.removeEventListener('mouseenter', showTooltip);
+            element.removeEventListener('mouseleave', hideTooltip);
+        });
+        this.state.activeTooltipInstances = [];
+        
+        document.querySelectorAll('.custom-tooltip').forEach(tooltip => {
+            tooltip.remove();
+        });
+    }
+
+    showLoading(show) {
+        if (show) {
+            document.body.classList.add('loading');
+        } else {
+            document.body.classList.remove('loading');
+        }
+    }
+}
+
+// Initialize the application
+let budgetTracker;
+document.addEventListener('DOMContentLoaded', () => {
+    budgetTracker = new BudgetTracker();
+});
+
+// Add hover effects for transaction actions
+document.addEventListener('DOMContentLoaded', () => {
+    const style = document.createElement('style');
+    style.textContent = `
+        .list-group-item .transaction-actions {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .list-group-item:hover .transaction-actions {
+            opacity: 1;
+        }
+    `;
+    document.head.appendChild(style);
 });
