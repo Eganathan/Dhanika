@@ -6,7 +6,9 @@
     <meta name="description" content="Spendora - A modern, privacy-focused personal budget tracker and expense manager">
     <meta name="keywords" content="budget tracker, expense manager, personal finance, money management">
     <meta name="author" content="Spendora">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="msapplication-navbutton-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Spendora - Personal Budget Planner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,8 +303,16 @@
                                 <input type="radio" class="btn-check" name="chart-type" id="category-chart" value="category" aria-describedby="category-chart-help">
                                 <label class="btn btn-outline-primary" for="category-chart">Categories</label>
                             </div>
+                            <div id="category-subtype-selector" class="mt-2" style="display: none !important; justify-content: flex-end;">
+                                <div class="btn-group" role="radiogroup" aria-label="Category sub-type selector" style="font-size: 0.75rem;">
+                                    <input type="radio" class="btn-check" name="category-subtype" id="expense-categories" value="expense" checked>
+                                    <label class="btn btn-outline-danger" for="expense-categories" style="padding: 0.375rem 1rem; font-size: 0.75rem;">Expenses</label>
+                                    <input type="radio" class="btn-check" name="category-subtype" id="income-categories" value="income">
+                                    <label class="btn btn-outline-success" for="income-categories" style="padding: 0.375rem 1rem; font-size: 0.75rem;">Income</label>
+                                </div>
+                            </div>
                             <div id="overview-help" class="visually-hidden">Shows total income vs expenses overview</div>
-                            <div id="category-chart-help" class="visually-hidden">Shows expense breakdown by category</div>
+                            <div id="category-chart-help" class="visually-hidden">Shows breakdown by category with income/expense sub-types</div>
                         </div>
                         <div id="empty-chart-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
                             <i class="bi bi-pie-chart" aria-hidden="true"></i>

@@ -25,6 +25,8 @@ class BudgetTracker {
             balanceEl: document.getElementById('balance'),
             filterButtons: document.querySelectorAll('input[name="filter"]'),
             chartTypeButtons: document.querySelectorAll('input[name="chart-type"]'),
+            categorySubtypeButtons: document.querySelectorAll('input[name="category-subtype"]'),
+            categorySubtypeSelector: document.getElementById('category-subtype-selector'),
             emptyChartMessage: document.getElementById('empty-chart-message'),
             emptyTransactionMessage: document.getElementById('empty-transaction-message'),
             snackbar: document.getElementById('snackbar'),
@@ -65,6 +67,7 @@ class BudgetTracker {
             currentCategoryFilter: 'all',
             currentSearchTerm: '',
             currentChartType: 'overview',
+            currentCategorySubtype: 'expense',
             tooltipConfig: {},
             tooltipsEnabled,
             activeTooltipInstances: [],
@@ -127,6 +130,10 @@ class BudgetTracker {
         
         this.elements.chartTypeButtons?.forEach(button => {
             button.addEventListener('change', (e) => this.changeChartType(e.target.value));
+        });
+        
+        this.elements.categorySubtypeButtons?.forEach(button => {
+            button.addEventListener('change', (e) => this.changeCategorySubtype(e.target.value));
         });
 
         document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
@@ -465,6 +472,7 @@ class BudgetTracker {
             await this.loadConfiguration();
             this.initializeCurrency();
             this.setupTypeChangeListeners();
+            this.initializeChartDisplay();
             this.renderTransactions();
             this.updateChart();
             this.updateSummary();
@@ -1168,7 +1176,50 @@ class BudgetTracker {
 
     changeChartType(type) {
         this.state.currentChartType = type;
+        
+        // Show/hide category subtype selector
+        console.log('changeChartType called with:', type);
+        const selector = this.elements.categorySubtypeSelector;
+        console.log('categorySubtypeSelector element:', selector);
+        
+        if (selector) {
+            if (type === 'category') {
+                selector.style.setProperty('display', 'flex', 'important');
+                console.log('Showing category subtype selector');
+            } else {
+                selector.style.setProperty('display', 'none', 'important');
+                console.log('Hiding category subtype selector');
+            }
+        } else {
+            console.error('categorySubtypeSelector element not found');
+        }
+        
         this.updateChart();
+    }
+    
+    changeCategorySubtype(subtype) {
+        this.state.currentCategorySubtype = subtype;
+        this.updateChart();
+    }
+    
+    initializeChartDisplay() {
+        // Ensure the category subtype selector is hidden on page load since overview is default
+        console.log('initializeChartDisplay called');
+        const selector = this.elements.categorySubtypeSelector;
+        console.log('categorySubtypeSelector during init:', selector);
+        
+        if (selector) {
+            selector.style.setProperty('display', 'none', 'important');
+            console.log('Category subtype selector hidden during initialization');
+        } else {
+            console.error('categorySubtypeSelector element not found during initialization');
+        }
+        
+        // Also ensure overview chart is selected by default
+        const overviewRadio = document.getElementById('overview-chart');
+        if (overviewRadio && !overviewRadio.checked) {
+            overviewRadio.checked = true;
+        }
     }
 
     updateChart() {
@@ -1189,12 +1240,14 @@ class BudgetTracker {
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
 
-        if (income === 0 && expenses === 0) {
+        // For overview chart, check if both income and expenses are zero
+        if (this.state.currentChartType === 'overview' && income === 0 && expenses === 0) {
             this.elements.emptyChartMessage.style.display = 'block';
             this.elements.budgetChartCanvas.style.display = 'none';
             return;
         }
 
+        // For category chart, we'll handle empty states within the chart itself
         this.elements.emptyChartMessage.style.display = 'none';
         this.elements.budgetChartCanvas.style.display = 'block';
 
@@ -1241,13 +1294,21 @@ class BudgetTracker {
 
     getCategoryChartData() {
         const categoryTotals = {};
-        this.state.transactions
-            .filter(t => t.type === 'expense')
-            .forEach(t => {
-                categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-            });
+        const transactionType = this.state.currentCategorySubtype || 'expense';
+        
+        const filteredTransactions = this.state.transactions
+            .filter(t => t.type === transactionType);
+            
+        filteredTransactions.forEach(t => {
+            categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+        });
 
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+        // Check if there's no data for the selected category type
+        if (Object.keys(categoryTotals).length === 0) {
+            return this.getEmptyCategoryChartData(transactionType);
+        }
+
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16', '#d946ef', '#06b6d4'];
         
         return {
             type: 'pie',
@@ -1266,6 +1327,55 @@ class BudgetTracker {
                     legend: {
                         position: 'bottom',
                         labels: { color: '#f1f5f9' }
+                    },
+                    title: {
+                        display: true,
+                        text: `${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)} Categories`,
+                        color: '#f1f5f9',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        };
+    }
+    
+    getEmptyCategoryChartData(transactionType) {
+        return {
+            type: 'pie',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#6b7280'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: `No ${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)} Data`,
+                        color: '#f1f5f9',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                },
+                elements: {
+                    arc: {
+                        hoverBackgroundColor: '#6b7280'
                     }
                 }
             }
