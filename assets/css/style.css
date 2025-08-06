@@ -433,6 +433,47 @@ footer {
     z-index: 1;
 }
 
+/* Better spacing in transaction form - give inputs more breathing room */
+#transaction-form .mb-3 {
+    margin-bottom: var(--spacing-xl) !important;
+}
+
+/* Add more space between form sections */
+#transaction-form .type-selector {
+    margin-bottom: var(--spacing-xl) !important;
+}
+
+/* Reduce gap before the button to use space efficiently */
+#transaction-form .d-grid {
+    margin-top: var(--spacing-lg) !important;
+}
+
+/* Make form inputs larger and more prominent */
+#transaction-form .form-control,
+#transaction-form .form-select {
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    font-size: var(--font-size-lg) !important;
+    min-height: 52px !important;
+    border-radius: var(--radius-lg) !important;
+}
+
+/* Make the transaction type buttons larger */
+#transaction-form .btn-check + .btn {
+    padding: var(--spacing-md) var(--spacing-xl) !important;
+    font-size: var(--font-size-lg) !important;
+    min-height: 52px !important;
+    border-radius: var(--radius-lg) !important;
+}
+
+/* Make the save button more prominent */
+#transaction-form button[type="submit"] {
+    padding: var(--spacing-lg) var(--spacing-xl) !important;
+    font-size: var(--font-size-xl) !important;
+    min-height: 56px !important;
+    border-radius: var(--radius-lg) !important;
+    font-weight: 600 !important;
+}
+
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -477,15 +518,14 @@ footer {
 .snackbar {
     visibility: hidden;
     min-width: 300px;
-    margin-left: -150px;
     background: var(--card-bg);
     color: var(--text-color);
-    text-align: center;
+    text-align: left;
     border-radius: var(--radius-lg);
     padding: var(--spacing-md) var(--spacing-lg);
     position: fixed;
     z-index: 1000;
-    left: 50%;
+    right: 30px;
     bottom: 30px;
     font-size: var(--font-size-sm);
     border: 1px solid var(--border-color);
@@ -493,6 +533,9 @@ footer {
     backdrop-filter: blur(10px);
     transform: translateY(100px);
     transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .snackbar.show {
@@ -501,19 +544,29 @@ footer {
 }
 
 .snackbar.success {
-    border-left: 4px solid var(--success-color);
+    border-top: 4px solid var(--success-color);
 }
 
 .snackbar.error {
-    border-left: 4px solid var(--danger-color);
+    border-top: 4px solid var(--danger-color);
 }
 
 .snackbar.warning {
-    border-left: 4px solid var(--warning-color);
+    border-top: 4px solid var(--warning-color);
 }
 
 .snackbar.info {
-    border-left: 4px solid var(--info-color);
+    border-top: 4px solid var(--info-color);
+}
+
+.snackbar-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0 0 1rem;
+    line-height: 1;
 }
 
 /* Loading States */
@@ -647,7 +700,7 @@ body.loading::after {
 
 /* Enhanced Form Styles */
 .form-group {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .form-label {
@@ -664,19 +717,19 @@ body.loading::after {
 }
 
 .chart-container canvas {
-    max-height: 300px !important;
+    max-height: 250px !important;
     width: 100% !important;
 }
 
 @media (min-width: 768px) {
     .chart-container canvas {
-        max-height: 350px !important;
+        max-height: 280px !important;
     }
 }
 
 @media (min-width: 992px) {
     .chart-container canvas {
-        max-height: 380px !important;
+        max-height: 300px !important;
     }
 }
 
@@ -1017,7 +1070,7 @@ body.loading::after {
     }
     
     .chart-container .card-body {
-        min-height: 400px;
+        min-height: 350px;
     }
     
     .card-form .card-body,
@@ -1077,7 +1130,7 @@ body.loading::after {
     }
     
     .chart-container .card-body {
-        min-height: 450px;
+        min-height: 380px;
     }
     
     h1 {
@@ -1113,7 +1166,7 @@ body.loading::after {
     }
     
     .chart-container canvas {
-        max-height: 450px !important;
+        max-height: 350px !important;
     }
     
     h1 {
@@ -1840,6 +1893,53 @@ body.loading::after {
 
 #importModal .alert-danger .bi {
     color: var(--danger-color);
+}
+
+/* Analytics Consent Modal Styling */
+#analyticsConsentModal .modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+#analyticsConsentModal .modal-header {
+    background: var(--surface-bg);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+#analyticsConsentModal .modal-title {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+}
+
+#analyticsConsentModal .modal-body {
+    background: var(--card-bg);
+    color: var(--text-color);
+    padding: var(--spacing-xl);
+}
+
+#analyticsConsentModal .modal-body p {
+    color: var(--text-color);
+    margin-bottom: var(--spacing-md);
+}
+
+#analyticsConsentModal .alert-info {
+    background-color: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.3);
+    color: var(--text-color);
+}
+
+#analyticsConsentModal .alert-info .bi {
+    color: var(--info-color);
+}
+
+#analyticsConsentModal .modal-footer {
+    background: var(--surface-bg);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 /* Email fields visibility */

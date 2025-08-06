@@ -417,7 +417,7 @@ class BudgetTracker {
     toggleTooltips() {
         this.state.tooltipsEnabled = !this.state.tooltipsEnabled;
         localStorage.setItem('tooltipsEnabled', this.state.tooltipsEnabled);
-        this.showSnackbar(`Tooltips ${this.state.tooltipsEnabled ? 'enabled' : 'disabled'}`, 'info');
+        this.showSnackbar(`Tooltips ${this.state.tooltipsEnabled ? 'enabled' : 'disabled'}`, 'info', true);
     }
 
     toggleHelpSection() {
@@ -501,16 +501,35 @@ class BudgetTracker {
         }
     }
 
-    showSnackbar(message, type = 'success') {
+    showSnackbar(message, type = 'success', important = false) {
         if (!this.elements.snackbar) return;
-        
-        this.elements.snackbar.textContent = message;
+
+        // Only show snackbar for important messages
+        if (!important) {
+            const nonEssentialTypes = ['info'];
+            if (nonEssentialTypes.includes(type)) {
+                return;
+            }
+        }
+
+        this.elements.snackbar.innerHTML = `
+            <span>${message}</span>
+            <button class="snackbar-close">&times;</button>
+        `;
         this.elements.snackbar.className = `snackbar ${type}`;
         this.elements.snackbar.classList.add('show');
-        
-        setTimeout(() => {
+
+        // Auto-dismiss after 3 seconds
+        const timeoutId = setTimeout(() => {
             this.elements.snackbar.classList.remove('show');
         }, 3000);
+
+        // Allow manual closing
+        const closeButton = this.elements.snackbar.querySelector('.snackbar-close');
+        closeButton.addEventListener('click', () => {
+            clearTimeout(timeoutId);
+            this.elements.snackbar.classList.remove('show');
+        });
     }
 
     async loadTransactionTypes() {
@@ -732,12 +751,12 @@ class BudgetTracker {
             localStorage.setItem('selectedCurrencySymbol', symbol);
         } catch (error) {
             console.error('Failed to save currency settings:', error);
-            this.showSnackbar('Currency changed but failed to save setting', 'warning');
+            this.showSnackbar('Currency changed but failed to save setting', 'warning', true);
         }
         
         this.initializeCurrency();
         this.renderTransactions();
-        this.showSnackbar(`Currency changed to ${currency}`, 'success');
+        this.showSnackbar(`Currency changed to ${currency}`, 'success', true);
     }
 
     handleTransactionSubmit(e) {
@@ -791,10 +810,10 @@ class BudgetTracker {
             this.state.transactions.push(transaction);
             console.log('Total transactions:', this.state.transactions.length);
             this.setupCategoryFilters(); // Refresh category filters
-            this.showSnackbar('Transaction added successfully', 'success');
+            this.showSnackbar('Transaction added successfully', 'success', true);
         } catch (error) {
             console.error('Error adding transaction:', error);
-            this.showSnackbar('Failed to add transaction. Please try again.', 'error');
+            this.showSnackbar('Failed to add transaction. Please try again.', 'error', true);
         }
     }
 
@@ -804,13 +823,13 @@ class BudgetTracker {
             if (index !== -1) {
                 this.state.transactions[index] = transaction;
                 this.setupCategoryFilters(); // Refresh category filters
-                this.showSnackbar('Transaction updated successfully', 'success');
+                this.showSnackbar('Transaction updated successfully', 'success', true);
             } else {
                 throw new Error('Transaction not found');
             }
         } catch (error) {
             console.error('Error updating transaction:', error);
-            this.showSnackbar('Failed to update transaction. Please try again.', 'error');
+            this.showSnackbar('Failed to update transaction. Please try again.', 'error', true);
         }
     }
 
@@ -844,11 +863,11 @@ class BudgetTracker {
             this.updateChart();
             this.updateSummary();
             this.setupCategoryFilters(); // Refresh category filters
-            this.showSnackbar('Transaction deleted successfully', 'success');
+            this.showSnackbar('Transaction deleted successfully', 'success', true);
             console.log('Transaction deleted successfully');
         } catch (error) {
             console.error('Error deleting transaction:', error);
-            this.showSnackbar('Failed to delete transaction. Please try again.', 'error');
+            this.showSnackbar('Failed to delete transaction. Please try again.', 'error', true);
         }
     }
 
@@ -885,11 +904,17 @@ class BudgetTracker {
     }
 
     resetForm() {
+        // Get the currently selected transaction type before resetting
+        const currentTypeElement = this.elements.transactionForm.querySelector('input[name="type"]:checked');
+        const currentType = currentTypeElement ? currentTypeElement.value : 'income';
+        
         this.elements.transactionForm.reset();
         this.elements.cancelEditBtn.style.display = 'none';
         this.elements.transactionForm.querySelector('button[type="submit"]').textContent = 'Save Transaction';
-        this.elements.transactionForm.querySelector('input[name="type"][value="income"]').checked = true;
-        this.populateCategories('income');
+        
+        // Restore the previously selected transaction type
+        this.elements.transactionForm.querySelector(`input[name="type"][value="${currentType}"]`).checked = true;
+        this.populateCategories(currentType);
     }
 
     renderTransactions() {
@@ -1296,7 +1321,7 @@ class BudgetTracker {
         link.click();
         
         URL.revokeObjectURL(url);
-        this.showSnackbar('Data exported successfully', 'success');
+        this.showSnackbar('Data exported successfully', 'success', true);
     }
 
     importData(e) {
@@ -1327,17 +1352,17 @@ class BudgetTracker {
                     this.updateChart();
                     this.updateSummary();
                     
-                    this.showSnackbar('Data imported successfully', 'success');
+                    this.showSnackbar('Data imported successfully', 'success', true);
                 } else {
-                    this.showSnackbar('Invalid file format', 'error');
+                    this.showSnackbar('Invalid file format', 'error', true);
                 }
             } catch (error) {
-                this.showSnackbar('Error reading file', 'error');
+                this.showSnackbar('Error reading file', 'error', true);
             }
         };
         
         reader.onerror = () => {
-            this.showSnackbar('Error reading file', 'error');
+            this.showSnackbar('Error reading file', 'error', true);
         };
         
         reader.readAsText(file);
