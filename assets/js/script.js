@@ -1394,7 +1394,7 @@ class BudgetTracker {
         }
     }
 
-    // Updated export function with encryption
+    // Updated export function with encryption and mailto link
     async exportDataEncrypted(passphrase, method, email = null) {
         try {
             const data = {
@@ -1420,89 +1420,34 @@ class BudgetTracker {
                 
                 URL.revokeObjectURL(url);
                 this.showSnackbar('Encrypted backup downloaded successfully', 'success');
+
             } else if (method === 'email' && email) {
-                await this.sendBackupEmail(email, encryptedData, filename);
+                const subject = 'Spendora Encrypted Budget Backup';
+                const body = `
+Hello,
+
+Here is your encrypted Spendora backup data.
+
+--- IMPORTANT ---
+To restore this backup:
+1. Copy the entire block of text below, starting from '{' and ending with '}'.
+2. Save it as a text file with a .json extension (e.g., 'my-backup.json').
+3. Use the 'Import Data' feature in Spendora and select the file you just saved.
+-----------------
+
+${encryptedData}
+                `;
+                
+                const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                // Open the user's default email client
+                window.location.href = mailtoLink;
+                
+                this.showSnackbar('Your email client has been opened.', 'success');
             }
         } catch (error) {
             console.error('Export error:', error);
             this.showSnackbar('Failed to export data: ' + error.message, 'error');
-        }
-    }
-
-    // Send backup via email
-    async sendBackupEmail(email, encryptedData, filename) {
-        try {
-            this.showSnackbar('Sending email...', 'info');
-            
-            const response = await fetch('send_backup.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    email: email,
-                    encryptedData: encryptedData,
-                    filename: filename
-                })
-            });
-
-            // Check if response is valid JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                // If not JSON, get the text to see what went wrong
-                const responseText = await response.text();
-                console.error('Non-JSON response:', responseText);
-                throw new Error('Server returned invalid response format');
-            }
-
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showSnackbar('✅ Encrypted backup sent successfully to ' + email, 'success');
-            } else if (result.fallback) {
-                // Handle fallback case where email failed but backup was saved
-                this.showSnackbar('⚠️ ' + result.message, 'warning');
-                
-                // Offer download as alternative
-                if (confirm('Email delivery failed. Would you like to download the backup file instead?')) {
-                    this.downloadBackupFile(encryptedData, filename);
-                }
-            } else {
-                throw new Error(result.message || 'Unknown error occurred');
-            }
-        } catch (error) {
-            console.error('Email sending error:', error);
-            
-            // Provide fallback option
-            const errorMessage = error.message || 'Failed to send email';
-            this.showSnackbar('❌ ' + errorMessage, 'error');
-            
-            // Ask user if they want to download instead
-            setTimeout(() => {
-                if (confirm('Email delivery failed. Would you like to download the encrypted backup instead?')) {
-                    this.downloadBackupFile(encryptedData, filename);
-                }
-            }, 1000);
-        }
-    }
-
-    // Helper function to download backup file as fallback
-    downloadBackupFile(encryptedData, filename) {
-        try {
-            const dataBlob = new Blob([encryptedData], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.click();
-            
-            URL.revokeObjectURL(url);
-            this.showSnackbar('💾 Encrypted backup downloaded successfully', 'success');
-        } catch (error) {
-            console.error('Download error:', error);
-            this.showSnackbar('Failed to download backup file', 'error');
         }
     }
 
