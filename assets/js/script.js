@@ -4,6 +4,7 @@ class BudgetTracker {
         this.initializeElements();
         this.initializeState();
         this.bindEvents();
+        this.initializeMobileMenu();
         this.initialize();
     }
 
@@ -120,6 +121,163 @@ class BudgetTracker {
         document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
             item.addEventListener('click', (e) => this.changeCurrency(e));
         });
+    }
+
+    initializeMobileMenu() {
+        // Mobile menu elements
+        this.mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        this.mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+        this.mobileMenuPanel = document.getElementById('mobile-menu-panel');
+        this.mobileMenuClose = document.querySelector('.mobile-menu-close');
+        
+        // Scroll detection for mobile header
+        let lastScrollY = window.scrollY;
+        const header = document.querySelector('header');
+        
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            
+            // Only apply on mobile screens
+            if (window.innerWidth <= 767) {
+                if (currentScrollY > 100) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            
+            lastScrollY = currentScrollY;
+        });
+        
+        // Mobile menu toggle
+        if (this.mobileMenuToggle) {
+            this.mobileMenuToggle.addEventListener('click', () => {
+                this.openMobileMenu();
+            });
+        }
+        
+        // Mobile menu close
+        if (this.mobileMenuClose) {
+            this.mobileMenuClose.addEventListener('click', () => {
+                this.closeMobileMenu();
+            });
+        }
+        
+        // Mobile menu overlay
+        if (this.mobileMenuOverlay) {
+            this.mobileMenuOverlay.addEventListener('click', () => {
+                this.closeMobileMenu();
+            });
+        }
+        
+        // Mobile menu item handlers
+        this.bindMobileMenuItems();
+        
+        // Close menu on window resize if it becomes desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 767) {
+                this.closeMobileMenu();
+                document.querySelector('header').classList.remove('scrolled');
+            }
+        });
+    }
+
+    openMobileMenu() {
+        if (this.mobileMenuOverlay && this.mobileMenuPanel) {
+            this.mobileMenuOverlay.classList.add('active');
+            this.mobileMenuPanel.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    closeMobileMenu() {
+        if (this.mobileMenuOverlay && this.mobileMenuPanel) {
+            this.mobileMenuOverlay.classList.remove('active');
+            this.mobileMenuPanel.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    bindMobileMenuItems() {
+        // Export data
+        const mobileExportBtn = document.getElementById('mobile-export-btn');
+        if (mobileExportBtn) {
+            mobileExportBtn.addEventListener('click', () => {
+                this.exportData();
+                this.closeMobileMenu();
+            });
+        }
+        
+        // Import data
+        const mobileImportBtn = document.getElementById('mobile-import-btn');
+        const mobileImportFile = document.getElementById('mobile-import-file');
+        if (mobileImportBtn && mobileImportFile) {
+            mobileImportBtn.addEventListener('click', () => {
+                mobileImportFile.click();
+            });
+            
+            mobileImportFile.addEventListener('change', (e) => {
+                this.importData(e);
+                this.closeMobileMenu();
+            });
+        }
+        
+        // Currency selector
+        const mobileCurrencyBtn = document.getElementById('mobile-currency-btn');
+        const mobileCurrencyList = document.querySelector('.mobile-currency-list');
+        if (mobileCurrencyBtn && mobileCurrencyList) {
+            mobileCurrencyBtn.addEventListener('click', () => {
+                const isVisible = mobileCurrencyList.style.display === 'block';
+                mobileCurrencyList.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Currency selection
+            mobileCurrencyList.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const currency = e.target.dataset.currency;
+                    const symbol = e.target.dataset.symbol;
+                    this.updateCurrency(currency, symbol);
+                    mobileCurrencyList.style.display = 'none';
+                    this.closeMobileMenu();
+                });
+            });
+        }
+        
+        // Tooltip toggle
+        const mobileTooltipBtn = document.getElementById('mobile-tooltip-btn');
+        if (mobileTooltipBtn) {
+            mobileTooltipBtn.addEventListener('click', () => {
+                this.toggleTooltips();
+                this.closeMobileMenu();
+            });
+        }
+    }
+
+    updateCurrency(currency, symbol) {
+        this.state.currentCurrency = currency;
+        this.state.currentCurrencySymbol = symbol;
+        
+        localStorage.setItem('selectedCurrency', currency);
+        localStorage.setItem('selectedCurrencySymbol', symbol);
+        
+        // Update current currency display
+        const currentCurrencySpan = document.getElementById('current-currency');
+        if (currentCurrencySpan) {
+            currentCurrencySpan.textContent = `${symbol} ${currency}`;
+        }
+        
+        // Refresh displays
+        this.updateSummary();
+        this.renderTransactions();
+        
+        this.showSnackbar(`Currency changed to ${currency}`, 'success');
+    }
+
+    toggleTooltips() {
+        this.state.tooltipsEnabled = !this.state.tooltipsEnabled;
+        localStorage.setItem('tooltipsEnabled', this.state.tooltipsEnabled);
+        this.showSnackbar(`Tooltips ${this.state.tooltipsEnabled ? 'enabled' : 'disabled'}`, 'info');
     }
 
     async initialize() {

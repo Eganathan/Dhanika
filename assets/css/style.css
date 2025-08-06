@@ -1448,6 +1448,206 @@ body.loading::after {
     font-size: var(--font-size-lg);
 }
 
+/* Hide mobile menu elements on desktop */
+@media (min-width: 768px) {
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+    
+    .mobile-menu-overlay,
+    .mobile-menu-panel {
+        display: none !important;
+    }
+}
+
+/* Mobile Sticky Header with Burger Menu */
+@media (max-width: 767px) {
+    /* Hide desktop header buttons on mobile */
+    .header-buttons {
+        display: none !important;
+    }
+    
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        transition: all var(--transition-normal);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    /* Compact header when scrolled */
+    header.scrolled {
+        padding: var(--spacing-xs) 0;
+        background: rgba(15, 23, 42, 0.95);
+    }
+    
+    /* Mobile menu toggle button */
+    .mobile-menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 20px;
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+    }
+    
+    .mobile-menu-toggle:hover {
+        background: var(--surface-bg);
+        color: var(--primary-color);
+    }
+    
+    /* Show burger menu when scrolled */
+    header.scrolled .mobile-menu-toggle {
+        display: block;
+    }
+    
+    /* Header title adjustments */
+    header h1 {
+        transition: all var(--transition-normal);
+    }
+    
+    header.scrolled h1 {
+        font-size: var(--font-size-lg);
+    }
+    
+    header.scrolled p {
+        display: none;
+    }
+    
+    /* Add margin to main content to account for fixed header */
+    main.container {
+        margin-top: 100px;
+    }
+    
+    /* Mobile menu overlay */
+    .mobile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-normal);
+    }
+    
+    .mobile-menu-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* Mobile menu panel */
+    .mobile-menu-panel {
+        position: fixed;
+        top: 0;
+        right: -300px;
+        width: 280px;
+        height: 100vh;
+        background: linear-gradient(135deg, var(--dark-bg), var(--card-bg));
+        z-index: 9999;
+        transition: all var(--transition-normal);
+        padding: var(--spacing-xl) var(--spacing-lg);
+        border-left: 1px solid var(--border-color);
+        overflow-y: auto;
+    }
+    
+    .mobile-menu-panel.active {
+        right: 0;
+    }
+    
+    /* Mobile menu header */
+    .mobile-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .mobile-menu-title {
+        color: var(--primary-color);
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .mobile-menu-close {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 24px;
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: all var(--transition-fast);
+    }
+    
+    .mobile-menu-close:hover {
+        background: var(--danger-color);
+        color: white;
+    }
+    
+    /* Mobile menu items */
+    .mobile-menu-items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .mobile-menu-item {
+        background: linear-gradient(135deg, var(--surface-bg), var(--card-bg));
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        transition: all var(--transition-fast);
+    }
+    
+    .mobile-menu-item:hover {
+        background: linear-gradient(135deg, var(--card-bg), var(--surface-bg));
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .mobile-menu-item .btn {
+        width: 100%;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: none;
+        background: none;
+        color: var(--text-color);
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+    
+    .mobile-menu-item .btn:hover {
+        color: var(--primary-color);
+        background: none;
+    }
+    
+    /* Add top margin to main content for fixed header */
+    main.container {
+        margin-top: 120px;
+        transition: margin-top var(--transition-normal);
+    }
+    
+    header.scrolled ~ main.container {
+        margin-top: 80px;
+    }
+}
+
 /* Make sure amounts in transaction list have consistent spacing */
 @media (min-width: 768px) {
     .list-group-item .amount {

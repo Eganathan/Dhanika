@@ -21,8 +21,16 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <h1 class="mb-0">Spendora</h1>
-                    <p class="text-muted">spendora.eknath.dev</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="mb-0">Spendora</h1>
+                            <p class="text-muted">spendora.eknath.dev</p>
+                        </div>
+                        <!-- Mobile menu toggle button (hidden by default) -->
+                        <button class="mobile-menu-toggle" aria-label="Open mobile menu">
+                            <i class="bi bi-list" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0 gap-2 header-buttons">
@@ -62,6 +70,55 @@
             </div>
         </div>
     </header>
+
+    <!-- Mobile Menu Overlay and Panel -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+    <div class="mobile-menu-panel" id="mobile-menu-panel">
+        <div class="mobile-menu-header">
+            <h3 class="mobile-menu-title">📊 Spendora</h3>
+            <button class="mobile-menu-close" aria-label="Close mobile menu">
+                <i class="bi bi-x" aria-hidden="true"></i>
+            </button>
+        </div>
+        
+        <div class="mobile-menu-items">
+            <div class="mobile-menu-item">
+                <button class="btn" id="mobile-export-btn">
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    Export Data
+                </button>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn" id="mobile-import-btn">
+                    <i class="bi bi-upload" aria-hidden="true"></i>
+                    Import Data
+                </button>
+                <input type="file" id="mobile-import-file" accept=".json" style="display: none;">
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn" id="mobile-currency-btn">
+                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>
+                    Change Currency
+                </button>
+                <div class="mobile-currency-list" style="display: none; margin-top: 10px;">
+                    <a href="#" class="dropdown-item" data-currency="INR" data-symbol="₹">₹ Indian Rupee</a>
+                    <a href="#" class="dropdown-item" data-currency="USD" data-symbol="$">$ US Dollar</a>
+                    <a href="#" class="dropdown-item" data-currency="EUR" data-symbol="€">€ Euro</a>
+                    <a href="#" class="dropdown-item" data-currency="GBP" data-symbol="£">£ British Pound</a>
+                    <a href="#" class="dropdown-item" data-currency="JPY" data-symbol="¥">¥ Japanese Yen</a>
+                </div>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn" id="mobile-tooltip-btn">
+                    <i class="bi bi-question-circle" aria-hidden="true"></i>
+                    Toggle Tooltips
+                </button>
+            </div>
+        </div>
+    </div>
     <main class="container" id="main-content" role="main">
         <!-- Top Section: New Transaction and Budget Overview Side by Side -->
         <div class="row top-section">
