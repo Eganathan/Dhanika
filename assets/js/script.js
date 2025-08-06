@@ -1000,55 +1000,443 @@ class BudgetTracker {
                 
             const balance = income - expenses;
             
-            // Create a temporary container for the PDF content
-            const container = document.createElement('div');
-            container.style.width = '8.5in';
-            container.style.minHeight = '11in';
-            container.style.margin = '0';
-            container.style.padding = '0.75in';
-            container.style.backgroundColor = 'white';
-            container.style.fontFamily = 'Arial, sans-serif';
-            container.style.fontSize = '12px';
-            container.style.lineHeight = '1.4';
-            container.style.color = '#333';
+            // Create a minimal container optimized for PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                position: fixed;
+                top: -9999px;
+                left: 0;
+                width: 794px;
+                background: white;
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                padding: 40px;
+                color: #333;
+            `;
             
-            // Generate the content
-            container.innerHTML = this.generatePDFContent(income, expenses, balance);
+            // Generate super compact content
+            pdfContainer.innerHTML = this.generateMinimalPDFContent(income, expenses, balance);
+            document.body.appendChild(pdfContainer);
             
-            // Temporarily add to document
-            document.body.appendChild(container);
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 1.5,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                width: 794,
+                height: Math.min(pdfContainer.offsetHeight, 1123)
+            });
             
-            const opt = {
-                margin: 0,
-                filename: `Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 1.5,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    width: container.offsetWidth,
-                    height: container.offsetHeight
-                },
-                jsPDF: { 
-                    unit: 'in', 
-                    format: 'letter', 
-                    orientation: 'portrait'
-                }
-            };
-
-            await html2pdf().from(container).set(opt).save();
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            if (jsPDF) {
+                const pdf = new jsPDF('p', 'px', [794, 1123]);
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, 794, Math.min(canvas.height, 1123));
+                pdf.save(`Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+            }
             
-            // Remove temporary container
-            document.body.removeChild(container);
-            
+            document.body.removeChild(pdfContainer);
             this.showSnackbar('Budget report downloaded successfully!', 'success');
+            
         } catch (error) {
             console.error('Error generating PDF report:', error);
             this.showSnackbar('Failed to generate report. Please try again.', 'error');
         } finally {
             this.showLoading(false);
         }
+    }
+    
+    async proceedWithPDF() {
+        try {
+            const previewElement = document.getElementById('pdf-preview');
+            if (!previewElement) return;
+            
+            // Remove buttons before capture
+            const buttons = previewElement.querySelectorAll('button');
+            buttons.forEach(btn => btn.remove());
+            
+            // Let's try just downloading as image first since html2pdf isn't working
+            const canvas = await html2canvas(previewElement, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: previewElement.offsetWidth,
+                height: previewElement.offsetHeight
+            });
+            
+            // Create download link for image
+            const link = document.createElement('a');
+            link.download = `Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // Also try to create a simple PDF using jsPDF directly
+            const { jsPDF } = window.jspdf || {};
+            if (jsPDF) {
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Calculate dimensions to fit A4
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasAspectRatio = canvas.height / canvas.width;
+                const pdfAspectRatio = pdfHeight / pdfWidth;
+                
+                let renderWidth, renderHeight;
+                if (canvasAspectRatio > pdfAspectRatio) {
+                    renderHeight = pdfHeight - 20; // 10mm margin top/bottom
+                    renderWidth = renderHeight / canvasAspectRatio;
+                } else {
+                    renderWidth = pdfWidth - 20; // 10mm margin left/right
+                    renderHeight = renderWidth * canvasAspectRatio;
+                }
+                
+                const xOffset = (pdfWidth - renderWidth) / 2;
+                const yOffset = (pdfHeight - renderHeight) / 2;
+                
+                pdf.addImage(imgData, 'PNG', xOffset, yOffset, renderWidth, renderHeight);
+                pdf.save(`Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+            }
+            
+            // Clean up
+            document.body.removeChild(previewElement);
+            delete window.budgetTracker;
+            
+            this.showSnackbar('Budget report downloaded as image and PDF!', 'success');
+        } catch (error) {
+            console.error('Error generating report:', error);
+            this.showSnackbar('Failed to generate report. Please try again.', 'error');
+        }
+    }
+
+    createCompactVersion() {
+        const previewElement = document.getElementById('pdf-preview');
+        if (!previewElement) return;
+        
+        // Make everything even more compact
+        const innerContent = previewElement.querySelector('div');
+        if (innerContent) {
+            // Scale down everything
+            innerContent.style.transform = 'scale(0.8)';
+            innerContent.style.transformOrigin = 'top center';
+            innerContent.style.margin = '-40px auto 0 auto';
+        }
+        
+        this.showSnackbar('Switched to compact view for better fit', 'info');
+    }
+
+    async skipPreviewAndDownload() {
+        try {
+            const previewElement = document.getElementById('pdf-preview');
+            if (!previewElement) return;
+            
+            // Close preview and directly generate PDF with optimized settings
+            document.body.removeChild(previewElement);
+            
+            const income = this.state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const expenses = this.state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const balance = income - expenses;
+            
+            // Create a minimal container optimized for PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                position: fixed;
+                top: -9999px;
+                left: 0;
+                width: 794px;
+                background: white;
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                padding: 40px;
+                color: #333;
+            `;
+            
+            // Generate super compact content
+            pdfContainer.innerHTML = this.generateMinimalPDFContent(income, expenses, balance);
+            document.body.appendChild(pdfContainer);
+            
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 1.5,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                width: 794,
+                height: Math.min(pdfContainer.offsetHeight, 1123)
+            });
+            
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            if (jsPDF) {
+                const pdf = new jsPDF('p', 'px', [794, 1123]);
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, 794, Math.min(canvas.height, 1123));
+                pdf.save(`Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+            }
+            
+            document.body.removeChild(pdfContainer);
+            delete window.budgetTracker;
+            this.showSnackbar('PDF generated successfully with optimized layout!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating direct PDF:', error);
+            this.showSnackbar('Failed to generate PDF. Please try again.', 'error');
+        }
+    }
+
+    generateMinimalPDFContent(income, expenses, balance) {
+        const currencySymbol = this.state.currentCurrencySymbol || '₹';
+        const formatAmount = (amount) => `${currencySymbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const timestamp = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        return `
+            <div style="text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 3px solid #3b82f6;">
+                <h1 style="color: #3b82f6; margin: 0 0 10px 0; font-size: 36px; font-weight: bold;">📊 Spendora Budget Report</h1>
+                <p style="color: #666; margin: 0; font-size: 14px;">spendora.eknath.dev • ${timestamp}</p>
+            </div>
+            
+            <table style="width: 100%; margin: 30px 0; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 33%; text-align: center; padding: 30px; background: #e8f5e8; border: 3px solid #10b981;">
+                        <h2 style="color: #10b981; margin: 0 0 10px 0; font-size: 16px;">💰 TOTAL INCOME</h2>
+                        <p style="font-size: 32px; font-weight: bold; color: #10b981; margin: 0; font-family: monospace;">${formatAmount(income)}</p>
+                    </td>
+                    <td style="width: 33%; text-align: center; padding: 30px; background: #fde8e8; border: 3px solid #ef4444;">
+                        <h2 style="color: #ef4444; margin: 0 0 10px 0; font-size: 16px;">💸 TOTAL EXPENSES</h2>
+                        <p style="font-size: 32px; font-weight: bold; color: #ef4444; margin: 0; font-family: monospace;">${formatAmount(expenses)}</p>
+                    </td>
+                    <td style="width: 33%; text-align: center; padding: 30px; background: ${balance >= 0 ? '#e8f5e8' : '#fde8e8'}; border: 3px solid ${balance >= 0 ? '#10b981' : '#ef4444'};">
+                        <h2 style="color: ${balance >= 0 ? '#10b981' : '#ef4444'}; margin: 0 0 10px 0; font-size: 16px;">💳 NET BALANCE</h2>
+                        <p style="font-size: 32px; font-weight: bold; color: ${balance >= 0 ? '#10b981' : '#ef4444'}; margin: 0; font-family: monospace;">${formatAmount(balance)}</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="background: #fff3cd; padding: 30px; border: 2px solid #ffc107; margin: 30px 0; text-align: center;">
+                <h2 style="color: #856404; margin: 0 0 20px 0; font-size: 20px;">💡 Financial Summary</h2>
+                <div style="display: flex; justify-content: space-around;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: ${income > 0 ? (balance/income >= 0.2 ? '#10b981' : '#f59e0b') : '#64748b'};">
+                            ${income > 0 ? `${((balance/income)*100).toFixed(1)}%` : 'N/A'}
+                        </div>
+                        <div style="color: #666; font-size: 14px;">Savings Rate</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${this.state.transactions.length}</div>
+                        <div style="color: #666; font-size: 14px;">Total Transactions</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: ${balance >= 0 ? '#10b981' : '#ef4444'};">
+                            ${balance >= 0 ? '🟢 Healthy' : '🔴 Review Needed'}
+                        </div>
+                        <div style="color: #666; font-size: 14px;">Financial Status</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #ccc;">
+                <p style="color: #666; font-size: 12px; margin: 0;">
+                    <strong style="color: #3b82f6;">Spendora Personal Budget Tracker</strong> • Visit spendora.eknath.dev
+                </p>
+            </div>
+        `;
+    }
+
+    generateInlineChart(type, income, expenses) {
+        if (income === 0 && expenses === 0) {
+            return '<div style="color: #64748b; text-align: center; padding: 40px; font-style: italic;">No data available</div>';
+        }
+        
+        const total = income + expenses;
+        if (total === 0) return '<div style="color: #64748b; text-align: center; padding: 40px;">No transactions</div>';
+        
+        const incomePercent = ((income / total) * 100).toFixed(1);
+        const expensePercent = ((expenses / total) * 100).toFixed(1);
+        
+        // Create a simple visual representation
+        return `
+            <div style="display: flex; align-items: center; justify-content: center; margin: 10px 0;">
+                <div style="width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(#10b981 0% ${incomePercent}%, #ef4444 ${incomePercent}% 100%); position: relative; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 65px; height: 65px; background: linear-gradient(135deg, #1e293b, #334155); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div style="color: #f1f5f9; font-size: 11px; font-weight: 600;">Total</div>
+                        <div style="color: #cbd5e1; font-size: 9px;">${total.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 8px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <div style="width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></div>
+                    <span style="color: #cbd5e1; font-size: 10px;">Income ${incomePercent}%</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <div style="width: 10px; height: 10px; background: #ef4444; border-radius: 2px;"></div>
+                    <span style="color: #cbd5e1; font-size: 10px;">Expenses ${expensePercent}%</span>
+                </div>
+            </div>
+        `;
+    }
+
+    generateCategoryBreakdown(incomeByCategory, expensesByCategory) {
+        const formatAmount = (amount) => `${this.state.currentCurrencySymbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+        
+        // Get top categories
+        const topIncomeCategories = Object.entries(incomeByCategory)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 3);
+        const topExpenseCategories = Object.entries(expensesByCategory)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 5);
+        
+        let content = '';
+        
+        if (topIncomeCategories.length > 0) {
+            content += `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #10b981; font-size: 13px; margin: 0 0 10px 0; text-align: center;">💰 Top Income Sources</h4>
+                    ${topIncomeCategories.map(([category, amount]) => `
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #334155;">
+                            <span style="color: #cbd5e1; font-size: 11px;">${this.getCategoryLabel(category)}</span>
+                            <span style="color: #10b981; font-size: 11px; font-weight: 600;">${formatAmount(amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        if (topExpenseCategories.length > 0) {
+            content += `
+                <div>
+                    <h4 style="color: #ef4444; font-size: 13px; margin: 0 0 10px 0; text-align: center;">💸 Top Expense Categories</h4>
+                    ${topExpenseCategories.map(([category, amount]) => `
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #334155;">
+                            <span style="color: #cbd5e1; font-size: 11px;">${this.getCategoryLabel(category)}</span>
+                            <span style="color: #ef4444; font-size: 11px; font-weight: 600;">${formatAmount(amount)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        if (topIncomeCategories.length === 0 && topExpenseCategories.length === 0) {
+            content = '<div style="color: #64748b; text-align: center; padding: 40px; font-style: italic;">No category data available</div>';
+        }
+        
+        return content;
+    }
+
+    generateSimplePDFContent(income, expenses, balance) {
+        const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Format currency manually
+        const formatAmount = (amount) => {
+            return `${this.state.currentCurrencySymbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        
+        // Get transactions
+        const incomeTransactions = this.state.transactions
+            .filter(t => t.type === 'income')
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 8);
+            
+        const expenseTransactions = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 8);
+            
+        const incomeCount = this.state.transactions.filter(t => t.type === 'income').length;
+        const expenseCount = this.state.transactions.filter(t => t.type === 'expense').length;
+        
+        // Use simple table-based layout for maximum compatibility
+        return `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 3px solid #3b82f6;">
+                    <h1 style="color: #3b82f6; margin: 0 0 10px 0; font-size: 28px;">📊 Spendora Budget Report</h1>
+                    <p style="color: #666; margin: 0; font-size: 14px;">spendora.eknath.dev • ${currentDate}</p>
+                </div>
+                
+                <table width="100%" style="margin-bottom: 30px;" cellpadding="20" cellspacing="20">
+                    <tr>
+                        <td width="33%" style="text-align: center; padding: 20px; background: #e8f5e8; border: 3px solid #10b981;">
+                            <h3 style="color: #10b981; margin: 0 0 10px 0; font-size: 16px;">💰 TOTAL INCOME</h3>
+                            <p style="font-size: 22px; font-weight: bold; color: #10b981; margin: 0;">${formatAmount(income)}</p>
+                        </td>
+                        <td width="33%" style="text-align: center; padding: 20px; background: #fde8e8; border: 3px solid #ef4444;">
+                            <h3 style="color: #ef4444; margin: 0 0 10px 0; font-size: 16px;">💸 TOTAL EXPENSES</h3>
+                            <p style="font-size: 22px; font-weight: bold; color: #ef4444; margin: 0;">${formatAmount(expenses)}</p>
+                        </td>
+                        <td width="33%" style="text-align: center; padding: 20px; background: ${balance >= 0 ? '#e8f5e8' : '#fde8e8'}; border: 3px solid ${balance >= 0 ? '#10b981' : '#ef4444'};">
+                            <h3 style="color: ${balance >= 0 ? '#10b981' : '#ef4444'}; margin: 0 0 10px 0; font-size: 16px;">💳 BALANCE</h3>
+                            <p style="font-size: 22px; font-weight: bold; color: ${balance >= 0 ? '#10b981' : '#ef4444'}; margin: 0;">${formatAmount(balance)}</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <table width="100%" style="margin-bottom: 30px;" cellpadding="0" cellspacing="20">
+                    <tr>
+                        <td width="48%" valign="top">
+                            <div style="border: 2px solid #10b981;">
+                                <div style="background: #10b981; color: white; padding: 12px; font-weight: bold; font-size: 14px;">
+                                    💰 RECENT INCOME (${incomeCount} total transactions)
+                                </div>
+                                <div style="background: white; min-height: 200px; padding: 10px;">
+                                    ${incomeTransactions.length > 0 ? incomeTransactions.map(t => `
+                                        <div style="padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 5px;">
+                                            <div style="font-weight: bold; font-size: 12px; color: #333; margin-bottom: 3px;">${t.description}</div>
+                                            <div style="font-size: 10px; color: #666; margin-bottom: 3px;">${new Date(t.date).toLocaleDateString()}</div>
+                                            <div style="font-weight: bold; color: #10b981; font-size: 12px;">${formatAmount(t.amount)}</div>
+                                        </div>
+                                    `).join('') : '<div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">No income transactions yet</div>'}
+                                </div>
+                                <div style="background: #f0f0f0; padding: 10px; font-weight: bold; font-size: 12px; text-align: right;">
+                                    Total: <span style="color: #10b981;">${formatAmount(income)}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td width="48%" valign="top">
+                            <div style="border: 2px solid #ef4444;">
+                                <div style="background: #ef4444; color: white; padding: 12px; font-weight: bold; font-size: 14px;">
+                                    💸 RECENT EXPENSES (${expenseCount} total transactions)
+                                </div>
+                                <div style="background: white; min-height: 200px; padding: 10px;">
+                                    ${expenseTransactions.length > 0 ? expenseTransactions.map(t => `
+                                        <div style="padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 5px;">
+                                            <div style="font-weight: bold; font-size: 12px; color: #333; margin-bottom: 3px;">${t.description}</div>
+                                            <div style="font-size: 10px; color: #666; margin-bottom: 3px;">${new Date(t.date).toLocaleDateString()}</div>
+                                            <div style="font-weight: bold; color: #ef4444; font-size: 12px;">${formatAmount(t.amount)}</div>
+                                        </div>
+                                    `).join('') : '<div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">No expense transactions yet</div>'}
+                                </div>
+                                <div style="background: #f0f0f0; padding: 10px; font-weight: bold; font-size: 12px; text-align: right;">
+                                    Total: <span style="color: #ef4444;">${formatAmount(expenses)}</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border: 2px solid #ffc107;">
+                    <h3 style="color: #856404; margin: 0 0 15px 0; font-size: 16px;">💡 FINANCIAL SUMMARY</h3>
+                    <div style="color: #333; font-size: 13px; line-height: 1.6;">
+                        ${balance >= 0 
+                            ? `<p><strong>✅ Positive Balance:</strong> You have ${formatAmount(balance)} remaining after expenses.</p>${income > 0 ? `<p><strong>Savings Rate:</strong> ${((balance / income) * 100).toFixed(1)}% of your income is being saved.</p>` : ''}`
+                            : `<p><strong>⚠️ Overspending Alert:</strong> You are spending ${formatAmount(Math.abs(balance))} more than you earn.</p><p><strong>Action Required:</strong> Review your expenses or increase income to achieve financial balance.</p>`
+                        }
+                        <p><strong>Total Transactions:</strong> ${this.state.transactions.length} (${incomeCount} income + ${expenseCount} expenses)</p>
+                        ${this.state.transactions.length > 0 ? `<p><strong>Most Recent Transaction:</strong> ${this.state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date))[0].description} on ${new Date(this.state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date))[0].date).toLocaleDateString()}</p>` : ''}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 2px solid #ccc;">
+                    <p style="color: #666; font-size: 11px; margin: 0;">
+                        <strong>Generated by Spendora Personal Budget Tracker</strong><br>
+                        Visit spendora.eknath.dev • Report generated on ${currentDate}
+                    </p>
+                </div>
+            </div>
+        `;
     }
 
     generatePDFContent(income, expenses, balance) {
@@ -1058,14 +1446,16 @@ class BudgetTracker {
             day: 'numeric'
         });
         
-        // Get transactions
+        // Get transactions (limit for single page)
         const incomeTransactions = this.state.transactions
             .filter(t => t.type === 'income')
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 8); // Limit for space
             
         const expenseTransactions = this.state.transactions
             .filter(t => t.type === 'expense')
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 8); // Limit for space
         
         // Generate advice
         const expensesByCategory = {};
@@ -1074,129 +1464,93 @@ class BudgetTracker {
                 expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + t.amount;
             }
         });
-        const advice = this.generateFinancialAdvice(income, expenses, balance, expensesByCategory);
-        
-        // Create charts
-        const pieChartSVG = this.generatePieChartSVG(income, expenses);
-        const barChartSVG = this.generateBarChartSVG(expensesByCategory);
+        const advice = this.generateFinancialAdvice(income, expenses, balance, expensesByCategory).slice(0, 4);
         
         return `
-            <!-- Header -->
-            <div style="text-align: center; margin-bottom: 20px; padding: 15px 0; border-bottom: 2px solid #3b82f6;">
-                <h1 style="font-size: 28px; color: #3b82f6; margin: 0 0 8px 0; font-weight: bold;">📊 Spendora</h1>
-                <p style="font-size: 14px; color: #666; margin: 4px 0;"><strong>Personal Budget Report</strong> | spendora.eknath.dev | ${currentDate}</p>
+            <!-- Header with website styling -->
+            <div style="text-align: center; margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px; border: 2px solid #3b82f6;">
+                <h1 style="font-size: 24px; color: #3b82f6; margin: 0 0 8px 0; font-weight: 700;">📊 Spendora</h1>
+                <p style="font-size: 13px; color: #cbd5e1; margin: 0;">Personal Budget Report • spendora.eknath.dev • ${currentDate}</p>
             </div>
             
-            <!-- Top Section: Summary + Charts -->
-            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-                <!-- Financial Summary -->
-                <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
-                    <h3 style="text-align: center; margin: 0 0 15px 0; color: #333; font-size: 14px;">Financial Summary</h3>
-                    <div style="text-align: center;">
-                        <div style="margin-bottom: 8px;">
-                            <span style="font-size: 18px; font-weight: bold; color: #28a745; font-family: 'Courier New', monospace;">${this.formatCurrency(income)}</span>
-                            <div style="font-size: 10px; color: #666;">Total Income</div>
-                        </div>
-                        <div style="margin-bottom: 8px;">
-                            <span style="font-size: 18px; font-weight: bold; color: #dc3545; font-family: 'Courier New', monospace;">${this.formatCurrency(expenses)}</span>
-                            <div style="font-size: 10px; color: #666;">Total Expenses</div>
-                        </div>
-                        <div style="padding: 10px; margin-top: 10px; border-radius: 5px; ${balance >= 0 ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'}">
-                            <div style="font-size: 16px; font-weight: bold; font-family: 'Courier New', monospace;">${balance >= 0 ? '✅' : '⚠️'} ${this.formatCurrency(balance)}</div>
-                            <div style="font-size: 9px; margin-top: 3px;">Net Balance</div>
-                        </div>
-                    </div>
+            <!-- Summary Cards Row -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <div style="flex: 1; background: linear-gradient(135deg, #1e293b, #334155); padding: 15px; border-radius: 8px; border: 1px solid #475569; text-align: center;">
+                    <div style="color: #10b981; font-size: 20px; font-weight: 700; margin-bottom: 5px;">${this.formatCurrency(income)}</div>
+                    <div style="color: #cbd5e1; font-size: 11px;">💰 Total Income</div>
                 </div>
-                
-                <!-- Charts -->
-                <div style="flex: 1; display: flex; gap: 15px;">
-                    <div style="flex: 1; text-align: center; background: white; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px;">
-                        <h4 style="margin: 0 0 8px 0; font-size: 11px; color: #333;">Income vs Expenses</h4>
-                        ${pieChartSVG}
-                    </div>
-                    ${Object.keys(expensesByCategory).length > 0 ? `
-                    <div style="flex: 1; text-align: center; background: white; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px;">
-                        <h4 style="margin: 0 0 8px 0; font-size: 11px; color: #333;">Top Expenses</h4>
-                        ${barChartSVG}
-                    </div>
-                    ` : ''}
+                <div style="flex: 1; background: linear-gradient(135deg, #1e293b, #334155); padding: 15px; border-radius: 8px; border: 1px solid #475569; text-align: center;">
+                    <div style="color: #ef4444; font-size: 20px; font-weight: 700; margin-bottom: 5px;">${this.formatCurrency(expenses)}</div>
+                    <div style="color: #cbd5e1; font-size: 11px;">💸 Total Expenses</div>
+                </div>
+                <div style="flex: 1; background: linear-gradient(135deg, #1e293b, #334155); padding: 15px; border-radius: 8px; border: 1px solid ${balance >= 0 ? '#10b981' : '#ef4444'}; text-align: center;">
+                    <div style="color: ${balance >= 0 ? '#10b981' : '#ef4444'}; font-size: 20px; font-weight: 700; margin-bottom: 5px;">${this.formatCurrency(balance)}</div>
+                    <div style="color: #cbd5e1; font-size: 11px;">💳 Balance</div>
                 </div>
             </div>
             
-            <!-- Transaction Tables Side by Side -->
-            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+            <!-- Transactions Side by Side -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                 <!-- Income Transactions -->
                 <div style="flex: 1;">
-                    <div style="background: #28a745; color: white; padding: 8px 12px; font-weight: bold; font-size: 12px; border-radius: 5px 5px 0 0;">
-                        💰 Income (${incomeTransactions.length})
+                    <div style="background: #10b981; color: white; padding: 8px 12px; font-weight: 600; font-size: 12px; border-radius: 8px 8px 0 0;">
+                        💰 Recent Income (${this.state.transactions.filter(t => t.type === 'income').length})
                     </div>
-                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-top: none;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
-                            <thead style="position: sticky; top: 0; background: #f8f9fa;">
-                                <tr>
-                                    <th style="padding: 6px; text-align: left; border-bottom: 1px solid #dee2e6;">Description</th>
-                                    <th style="padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6;">Date</th>
-                                    <th style="padding: 6px; text-align: right; border-bottom: 1px solid #dee2e6;">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${incomeTransactions.length > 0 ? incomeTransactions.map(t => `
-                                    <tr>
-                                        <td style="padding: 4px 6px; border-bottom: 1px solid #f0f0f0;">${this.getCategoryEmoji(t.category)} ${t.description}</td>
-                                        <td style="padding: 4px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 8px;">${new Date(t.date).toLocaleDateString()}</td>
-                                        <td style="padding: 4px 6px; text-align: right; border-bottom: 1px solid #f0f0f0; font-family: 'Courier New', monospace; color: #28a745; font-weight: bold;">${this.formatCurrency(t.amount)}</td>
-                                    </tr>
-                                `).join('') : '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #666;">No income transactions</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="background: #e9ecef; padding: 6px 12px; font-weight: bold; font-size: 10px; border: 1px solid #dee2e6; border-top: none;">
-                        Total: <span style="font-family: 'Courier New', monospace; color: #28a745;">${this.formatCurrency(income)}</span>
+                    <div style="background: #1e293b; border: 1px solid #334155; border-top: none; border-radius: 0 0 8px 8px; min-height: 200px;">
+                        ${incomeTransactions.length > 0 ? incomeTransactions.map(t => `
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="color: #f1f5f9; font-size: 11px; font-weight: 500;">${this.getCategoryEmoji(t.category)} ${t.description}</div>
+                                    <div style="color: #64748b; font-size: 9px;">${new Date(t.date).toLocaleDateString()} • ${this.getCategoryLabel(t.category)}</div>
+                                </div>
+                                <div style="color: #10b981; font-weight: 600; font-size: 11px;">${this.formatCurrency(t.amount)}</div>
+                            </div>
+                        `).join('') : '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 11px;">No income transactions</div>'}
+                        <div style="background: #334155; padding: 8px 12px; color: #f1f5f9; font-weight: 600; font-size: 11px; text-align: right;">
+                            Total: <span style="color: #10b981;">${this.formatCurrency(income)}</span>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Expense Transactions -->
                 <div style="flex: 1;">
-                    <div style="background: #dc3545; color: white; padding: 8px 12px; font-weight: bold; font-size: 12px; border-radius: 5px 5px 0 0;">
-                        💸 Expenses (${expenseTransactions.length})
+                    <div style="background: #ef4444; color: white; padding: 8px 12px; font-weight: 600; font-size: 12px; border-radius: 8px 8px 0 0;">
+                        💸 Recent Expenses (${this.state.transactions.filter(t => t.type === 'expense').length})
                     </div>
-                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-top: none;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
-                            <thead style="position: sticky; top: 0; background: #f8f9fa;">
-                                <tr>
-                                    <th style="padding: 6px; text-align: left; border-bottom: 1px solid #dee2e6;">Description</th>
-                                    <th style="padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6;">Date</th>
-                                    <th style="padding: 6px; text-align: right; border-bottom: 1px solid #dee2e6;">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${expenseTransactions.length > 0 ? expenseTransactions.map(t => `
-                                    <tr>
-                                        <td style="padding: 4px 6px; border-bottom: 1px solid #f0f0f0;">${this.getCategoryEmoji(t.category)} ${t.description}</td>
-                                        <td style="padding: 4px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 8px;">${new Date(t.date).toLocaleDateString()}</td>
-                                        <td style="padding: 4px 6px; text-align: right; border-bottom: 1px solid #f0f0f0; font-family: 'Courier New', monospace; color: #dc3545; font-weight: bold;">${this.formatCurrency(t.amount)}</td>
-                                    </tr>
-                                `).join('') : '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #666;">No expense transactions</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="background: #e9ecef; padding: 6px 12px; font-weight: bold; font-size: 10px; border: 1px solid #dee2e6; border-top: none;">
-                        Total: <span style="font-family: 'Courier New', monospace; color: #dc3545;">${this.formatCurrency(expenses)}</span>
+                    <div style="background: #1e293b; border: 1px solid #334155; border-top: none; border-radius: 0 0 8px 8px; min-height: 200px;">
+                        ${expenseTransactions.length > 0 ? expenseTransactions.map(t => `
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="color: #f1f5f9; font-size: 11px; font-weight: 500;">${this.getCategoryEmoji(t.category)} ${t.description}</div>
+                                    <div style="color: #64748b; font-size: 9px;">${new Date(t.date).toLocaleDateString()} • ${this.getCategoryLabel(t.category)}</div>
+                                </div>
+                                <div style="color: #ef4444; font-weight: 600; font-size: 11px;">${this.formatCurrency(t.amount)}</div>
+                            </div>
+                        `).join('') : '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 11px;">No expense transactions</div>'}
+                        <div style="background: #334155; padding: 8px 12px; color: #f1f5f9; font-weight: 600; font-size: 11px; text-align: right;">
+                            Total: <span style="color: #ef4444;">${this.formatCurrency(expenses)}</span>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Financial Advice -->
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px;">
-                <h3 style="color: #856404; margin: 0 0 10px 0; font-size: 14px;">💡 Financial Insights & Recommendations</h3>
-                <ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.4; columns: 2; column-gap: 20px;">
-                    ${advice.map(tip => `<li style="margin-bottom: 6px; break-inside: avoid;">${tip}</li>`).join('')}
-                </ul>
+            <!-- Financial Insights -->
+            <div style="background: linear-gradient(135deg, #1e293b, #334155); border: 1px solid #475569; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #f59e0b; margin: 0 0 12px 0; font-size: 13px; font-weight: 600;">💡 Financial Insights</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${advice.map(tip => `
+                        <div style="background: #334155; padding: 8px 12px; border-radius: 6px; border: 1px solid #475569; flex: 1; min-width: 45%;">
+                            <div style="color: #cbd5e1; font-size: 10px; line-height: 1.4;">${tip}</div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
             
             <!-- Footer -->
-            <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #dee2e6; color: #666; font-size: 9px;">
-                <p style="margin: 2px 0;"><strong>Generated by Spendora - Personal Budget Tracker</strong> | Visit spendora.eknath.dev</p>
+            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #334155;">
+                <div style="color: #64748b; font-size: 10px;">
+                    <strong style="color: #3b82f6;">Spendora</strong> - Personal Budget Tracker | spendora.eknath.dev
+                </div>
             </div>
         `;
     }
