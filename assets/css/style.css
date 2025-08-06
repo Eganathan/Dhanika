@@ -1936,3 +1936,22 @@ body.loading::after {
     height: 1.5em;
     margin-left: var(--spacing-md);
 }
+
+/* AI Prompt Generator Styles */
+#advice-prompt-output {
+    background-color: var(--dark-bg);
+    color: var(--text-secondary);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: var(--font-size-sm);
+    border-color: var(--border-light);
+}
+
+#copy-prompt-btn {
+    background-color: var(--surface-bg);
+    border-color: var(--border-light);
+}
+
+#copy-prompt-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}

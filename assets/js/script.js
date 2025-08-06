@@ -101,6 +101,13 @@ class BudgetTracker {
         this.elements.importFileHeader?.addEventListener('change', (e) => this.handleFileSelect(e));
         this.elements.tooltipToggle?.addEventListener('click', () => this.toggleTooltips());
         
+        // AI Prompt Generator
+        const generatePromptBtn = document.getElementById('generate-prompt-btn');
+        generatePromptBtn?.addEventListener('click', () => this.generateAdvicePrompt());
+
+        const copyPromptBtn = document.getElementById('copy-prompt-btn');
+        copyPromptBtn?.addEventListener('click', () => this.copyAdvicePrompt());
+
         // Help section toggle
         const helpToggle = document.getElementById('toggle-help-section');
         helpToggle?.addEventListener('click', () => this.toggleHelpSection());
@@ -1902,6 +1909,70 @@ ${encryptedData}
         }
         
         return content;
+    }
+
+    generateAdvicePrompt() {
+        const income = this.state.transactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const expenses = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const balance = income - expenses;
+
+        const expenseByCategory = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => {
+                acc[t.category] = (acc[t.category] || 0) + t.amount;
+                return acc;
+            }, {});
+
+        const topExpenseCategories = Object.entries(expenseByCategory)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([category, amount]) => ` - ${this.getCategoryLabel(category)}: ${this.formatCurrency(amount)}`)
+            .join('\n');
+
+        const prompt = `
+I am looking for financial advice. Here is a summary of my recent financial activity in ${this.state.currentCurrency}:
+
+**Overall Summary:**
+- Total Income: ${this.formatCurrency(income)}
+- Total Expenses: ${this.formatCurrency(expenses)}
+- Net Balance: ${this.formatCurrency(balance)}
+
+**Top 5 Expense Categories:**
+${topExpenseCategories || 'No expenses yet.'}
+
+**My Goal:**
+I want to improve my financial health. Based on the data above, please provide actionable advice. Specifically, I am looking for:
+1.  **Spending Analysis:** Are there any red flags in my spending habits? Where are my biggest opportunities to save?
+2.  **Budgeting Suggestions:** How can I create a more effective budget based on my income and spending?
+3.  **Savings & Investment:** What are some simple strategies for saving or investing the money I have left over?
+
+Please provide clear, practical, and easy-to-follow recommendations.
+        `;
+
+        const promptContainer = document.getElementById('ai-prompt-container');
+        const promptOutput = document.getElementById('advice-prompt-output');
+
+        if (promptContainer && promptOutput) {
+            promptOutput.value = prompt.trim();
+            promptContainer.style.display = 'block';
+        }
+
+        this.showSnackbar('AI prompt generated!', 'success');
+    }
+
+    copyAdvicePrompt() {
+        const promptOutput = document.getElementById('advice-prompt-output');
+        if (promptOutput) {
+            promptOutput.select();
+            document.execCommand('copy');
+            this.showSnackbar('Prompt copied to clipboard!', 'info');
+        }
     }
 
     generateSimplePDFContent(income, expenses, balance) {
