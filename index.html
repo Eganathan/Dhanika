@@ -87,6 +87,9 @@
                         <button class="btn btn-outline-info" id="tooltip-toggle" title="Toggle helpful tooltips on/off" aria-label="Toggle helpful tooltips">
                             <i class="bi bi-question-circle" aria-hidden="true"></i>
                         </button>
+                        <button class="btn btn-outline-secondary" id="analytics-toggle" title="Toggle Google Analytics tracking" aria-label="Toggle analytics tracking">
+                            <i class="bi bi-graph-up" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -139,6 +142,13 @@
                     Toggle Tooltips
                 </button>
             </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn" id="mobile-analytics-btn">
+                    <i class="bi bi-graph-up" aria-hidden="true"></i>
+                    Analytics Settings
+                </button>
+            </div>
         </div>
     </div>
 
@@ -161,7 +171,7 @@
                         <div class="card-body" id="help-section-content">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h5 class="text-white mb-3">
+                                    <h5 class="text-dark mb-3">
                                         <i class="bi bi-question-circle-fill me-2" aria-hidden="true"></i>
                                         Why Use Spendora?
                                     </h5>
@@ -515,7 +525,7 @@
             <br>
             <small class="text-muted">
                 <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-                This site uses Google Analytics to improve user experience. Your financial data remains private and is stored locally on your device.
+                Google Analytics is only used if you consent to it. Your financial data remains private and is stored locally on your device.
             </small>
         </div>
     </footer>
@@ -616,6 +626,68 @@
                 snackbar.className = snackbar.className.replace('show', '');
             }, 3000);
         }
+
+        // Analytics toggle functionality
+        function updateAnalyticsButtonState() {
+            const analyticsConsent = localStorage.getItem('analyticsConsent');
+            const desktopBtn = document.getElementById('analytics-toggle');
+            const mobileBtn = document.getElementById('mobile-analytics-btn');
+            
+            if (!desktopBtn || !mobileBtn) return;
+            
+            if (analyticsConsent === 'accepted') {
+                // Active state - analytics enabled
+                desktopBtn.classList.remove('btn-outline-secondary');
+                desktopBtn.classList.add('btn-success');
+                desktopBtn.setAttribute('title', 'Analytics enabled - Click to disable');
+                desktopBtn.innerHTML = '<i class="bi bi-graph-up-arrow" aria-hidden="true"></i>';
+                mobileBtn.innerHTML = '<i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Analytics: ON';
+            } else {
+                // Inactive state - analytics disabled
+                desktopBtn.classList.remove('btn-success');
+                desktopBtn.classList.add('btn-outline-secondary');
+                desktopBtn.setAttribute('title', 'Analytics disabled - Click to enable');
+                desktopBtn.innerHTML = '<i class="bi bi-graph-down" aria-hidden="true"></i>';
+                mobileBtn.innerHTML = '<i class="bi bi-graph-down" aria-hidden="true"></i> Analytics: OFF';
+            }
+        }
+
+        function toggleAnalytics() {
+            const currentConsent = localStorage.getItem('analyticsConsent');
+            
+            if (currentConsent === 'accepted') {
+                // Disable analytics
+                localStorage.setItem('analyticsConsent', 'declined');
+                showSnackbar('Analytics disabled. No tracking data will be collected.', 'info');
+                
+                // Optionally reload page to stop analytics completely
+                if (window.gtag) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            } else {
+                // Enable analytics
+                localStorage.setItem('analyticsConsent', 'accepted');
+                loadGoogleAnalytics();
+                showSnackbar('Analytics enabled. Thank you for helping us improve!', 'success');
+            }
+            
+            updateAnalyticsButtonState();
+        }
+
+        // Initialize button state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                updateAnalyticsButtonState();
+            }, 100);
+            
+            // Desktop analytics toggle button
+            document.getElementById('analytics-toggle').addEventListener('click', toggleAnalytics);
+            
+            // Mobile analytics toggle button
+            document.getElementById('mobile-analytics-btn').addEventListener('click', toggleAnalytics);
+        });
     </script>
     
     <script src="assets/js/script.js"></script>

@@ -469,6 +469,7 @@ class BudgetTracker {
             this.updateChart();
             this.updateSummary();
             this.setupTooltips();
+            this.updateTooltipButtonState();
             this.setupCategoryFilters();
             this.setupKeyboardShortcuts();
             this.initializeHelpSection();
@@ -2831,6 +2832,33 @@ Please provide clear, practical, and easy-to-follow recommendations.
         } else {
             this.clearTooltips();
             this.showSnackbar('Tooltips disabled', 'success');
+        }
+        
+        // Update button visual state
+        this.updateTooltipButtonState();
+    }
+
+    updateTooltipButtonState() {
+        const desktopBtn = document.getElementById('tooltip-toggle');
+        const mobileBtn = document.getElementById('mobile-tooltip-btn');
+        
+        if (!desktopBtn || !mobileBtn) return;
+        
+        // Remove all possible button classes first
+        desktopBtn.classList.remove('btn-outline-info', 'btn-success', 'btn-outline-secondary');
+        
+        if (this.state.tooltipsEnabled) {
+            // Active state - tooltips enabled
+            desktopBtn.classList.add('btn-success');
+            desktopBtn.setAttribute('title', 'Tooltips enabled - Click to disable');
+            desktopBtn.innerHTML = '<i class="bi bi-question-circle-fill" aria-hidden="true"></i>';
+            mobileBtn.innerHTML = '<i class="bi bi-question-circle-fill" aria-hidden="true"></i> Tooltips: ON';
+        } else {
+            // Inactive state - tooltips disabled
+            desktopBtn.classList.add('btn-outline-secondary');
+            desktopBtn.setAttribute('title', 'Tooltips disabled - Click to enable');
+            desktopBtn.innerHTML = '<i class="bi bi-question-circle" aria-hidden="true"></i>';
+            mobileBtn.innerHTML = '<i class="bi bi-question-circle" aria-hidden="true"></i> Tooltips: OFF';
         }
     }
 
