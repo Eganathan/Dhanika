@@ -355,6 +355,10 @@ header .text-muted {
     font-size: var(--font-size-base);
     transition: all var(--transition-fast);
     box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: block;
 }
 
 .form-control:focus, .form-select:focus {
@@ -409,6 +413,24 @@ footer {
 .form-control::placeholder {
     color: var(--muted-text-color);
     opacity: 0.5;
+}
+
+/* Ensure form inputs are fully clickable */
+#description, #amount, #tags {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 2 !important;
+    cursor: text !important;
+}
+
+.form-control:not(:focus) {
+    cursor: text;
+}
+
+/* Prevent any overlay elements from interfering with form inputs */
+.mb-3 {
+    position: relative;
+    z-index: 1;
 }
 
 .empty-state {

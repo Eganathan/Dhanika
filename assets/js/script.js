@@ -986,39 +986,803 @@ class BudgetTracker {
         e.target.value = '';
     }
 
-    downloadSummary() {
-        const income = this.state.transactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
+    async downloadSummary() {
+        try {
+            this.showLoading(true);
             
-        const expenses = this.state.transactions
-            .filter(t => t.type === 'expense')
-            .reduce((sum, t) => sum + t.amount, 0);
+            const income = this.state.transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const expenses = this.state.transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const balance = income - expenses;
             
-        const balance = income - expenses;
+            // Create a temporary container for the PDF content
+            const container = document.createElement('div');
+            container.style.width = '8.5in';
+            container.style.minHeight = '11in';
+            container.style.margin = '0';
+            container.style.padding = '0.75in';
+            container.style.backgroundColor = 'white';
+            container.style.fontFamily = 'Arial, sans-serif';
+            container.style.fontSize = '12px';
+            container.style.lineHeight = '1.4';
+            container.style.color = '#333';
+            
+            // Generate the content
+            container.innerHTML = this.generatePDFContent(income, expenses, balance);
+            
+            // Temporarily add to document
+            document.body.appendChild(container);
+            
+            const opt = {
+                margin: 0,
+                filename: `Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 1.5,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: container.offsetWidth,
+                    height: container.offsetHeight
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'letter', 
+                    orientation: 'portrait'
+                }
+            };
 
-        const summaryHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h1>Budget Summary</h1>
-                <div style="margin: 20px 0;">
-                    <h3>Total Income: ${this.formatCurrency(income)}</h3>
-                    <h3>Total Expenses: ${this.formatCurrency(expenses)}</h3>
-                    <h3 style="color: ${balance >= 0 ? 'green' : 'red'}">Balance: ${this.formatCurrency(balance)}</h3>
+            await html2pdf().from(container).set(opt).save();
+            
+            // Remove temporary container
+            document.body.removeChild(container);
+            
+            this.showSnackbar('Budget report downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Error generating PDF report:', error);
+            this.showSnackbar('Failed to generate report. Please try again.', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    generatePDFContent(income, expenses, balance) {
+        const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Get transactions
+        const incomeTransactions = this.state.transactions
+            .filter(t => t.type === 'income')
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+        const expenseTransactions = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Generate advice
+        const expensesByCategory = {};
+        this.state.transactions.forEach(t => {
+            if (t.type === 'expense') {
+                expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + t.amount;
+            }
+        });
+        const advice = this.generateFinancialAdvice(income, expenses, balance, expensesByCategory);
+        
+        // Create charts
+        const pieChartSVG = this.generatePieChartSVG(income, expenses);
+        const barChartSVG = this.generateBarChartSVG(expensesByCategory);
+        
+        return `
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 20px; padding: 15px 0; border-bottom: 2px solid #3b82f6;">
+                <h1 style="font-size: 28px; color: #3b82f6; margin: 0 0 8px 0; font-weight: bold;">📊 Spendora</h1>
+                <p style="font-size: 14px; color: #666; margin: 4px 0;"><strong>Personal Budget Report</strong> | spendora.eknath.dev | ${currentDate}</p>
+            </div>
+            
+            <!-- Top Section: Summary + Charts -->
+            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <!-- Financial Summary -->
+                <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+                    <h3 style="text-align: center; margin: 0 0 15px 0; color: #333; font-size: 14px;">Financial Summary</h3>
+                    <div style="text-align: center;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 18px; font-weight: bold; color: #28a745; font-family: 'Courier New', monospace;">${this.formatCurrency(income)}</span>
+                            <div style="font-size: 10px; color: #666;">Total Income</div>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 18px; font-weight: bold; color: #dc3545; font-family: 'Courier New', monospace;">${this.formatCurrency(expenses)}</span>
+                            <div style="font-size: 10px; color: #666;">Total Expenses</div>
+                        </div>
+                        <div style="padding: 10px; margin-top: 10px; border-radius: 5px; ${balance >= 0 ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'}">
+                            <div style="font-size: 16px; font-weight: bold; font-family: 'Courier New', monospace;">${balance >= 0 ? '✅' : '⚠️'} ${this.formatCurrency(balance)}</div>
+                            <div style="font-size: 9px; margin-top: 3px;">Net Balance</div>
+                        </div>
+                    </div>
                 </div>
-                <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                
+                <!-- Charts -->
+                <div style="flex: 1; display: flex; gap: 15px;">
+                    <div style="flex: 1; text-align: center; background: white; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: 11px; color: #333;">Income vs Expenses</h4>
+                        ${pieChartSVG}
+                    </div>
+                    ${Object.keys(expensesByCategory).length > 0 ? `
+                    <div style="flex: 1; text-align: center; background: white; padding: 10px; border: 1px solid #dee2e6; border-radius: 8px;">
+                        <h4 style="margin: 0 0 8px 0; font-size: 11px; color: #333;">Top Expenses</h4>
+                        ${barChartSVG}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Transaction Tables Side by Side -->
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <!-- Income Transactions -->
+                <div style="flex: 1;">
+                    <div style="background: #28a745; color: white; padding: 8px 12px; font-weight: bold; font-size: 12px; border-radius: 5px 5px 0 0;">
+                        💰 Income (${incomeTransactions.length})
+                    </div>
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-top: none;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                            <thead style="position: sticky; top: 0; background: #f8f9fa;">
+                                <tr>
+                                    <th style="padding: 6px; text-align: left; border-bottom: 1px solid #dee2e6;">Description</th>
+                                    <th style="padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6;">Date</th>
+                                    <th style="padding: 6px; text-align: right; border-bottom: 1px solid #dee2e6;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${incomeTransactions.length > 0 ? incomeTransactions.map(t => `
+                                    <tr>
+                                        <td style="padding: 4px 6px; border-bottom: 1px solid #f0f0f0;">${this.getCategoryEmoji(t.category)} ${t.description}</td>
+                                        <td style="padding: 4px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 8px;">${new Date(t.date).toLocaleDateString()}</td>
+                                        <td style="padding: 4px 6px; text-align: right; border-bottom: 1px solid #f0f0f0; font-family: 'Courier New', monospace; color: #28a745; font-weight: bold;">${this.formatCurrency(t.amount)}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #666;">No income transactions</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="background: #e9ecef; padding: 6px 12px; font-weight: bold; font-size: 10px; border: 1px solid #dee2e6; border-top: none;">
+                        Total: <span style="font-family: 'Courier New', monospace; color: #28a745;">${this.formatCurrency(income)}</span>
+                    </div>
+                </div>
+                
+                <!-- Expense Transactions -->
+                <div style="flex: 1;">
+                    <div style="background: #dc3545; color: white; padding: 8px 12px; font-weight: bold; font-size: 12px; border-radius: 5px 5px 0 0;">
+                        💸 Expenses (${expenseTransactions.length})
+                    </div>
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-top: none;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                            <thead style="position: sticky; top: 0; background: #f8f9fa;">
+                                <tr>
+                                    <th style="padding: 6px; text-align: left; border-bottom: 1px solid #dee2e6;">Description</th>
+                                    <th style="padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6;">Date</th>
+                                    <th style="padding: 6px; text-align: right; border-bottom: 1px solid #dee2e6;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${expenseTransactions.length > 0 ? expenseTransactions.map(t => `
+                                    <tr>
+                                        <td style="padding: 4px 6px; border-bottom: 1px solid #f0f0f0;">${this.getCategoryEmoji(t.category)} ${t.description}</td>
+                                        <td style="padding: 4px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 8px;">${new Date(t.date).toLocaleDateString()}</td>
+                                        <td style="padding: 4px 6px; text-align: right; border-bottom: 1px solid #f0f0f0; font-family: 'Courier New', monospace; color: #dc3545; font-weight: bold;">${this.formatCurrency(t.amount)}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #666;">No expense transactions</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="background: #e9ecef; padding: 6px 12px; font-weight: bold; font-size: 10px; border: 1px solid #dee2e6; border-top: none;">
+                        Total: <span style="font-family: 'Courier New', monospace; color: #dc3545;">${this.formatCurrency(expenses)}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Advice -->
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #856404; margin: 0 0 10px 0; font-size: 14px;">💡 Financial Insights & Recommendations</h3>
+                <ul style="margin: 0; padding-left: 18px; font-size: 10px; line-height: 1.4; columns: 2; column-gap: 20px;">
+                    ${advice.map(tip => `<li style="margin-bottom: 6px; break-inside: avoid;">${tip}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #dee2e6; color: #666; font-size: 9px;">
+                <p style="margin: 2px 0;"><strong>Generated by Spendora - Personal Budget Tracker</strong> | Visit spendora.eknath.dev</p>
             </div>
         `;
+    }
 
-        const opt = {
-            margin: 1,
-            filename: `budget-summary-${new Date().toISOString().split('T')[0]}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
+    generateFinancialAdvice(income, expenses, balance, expensesByCategory) {
+        const advice = [];
+        const savingsRate = income > 0 ? ((balance / income) * 100) : 0;
+        
+        // Balance-based advice
+        if (balance > 0) {
+            if (savingsRate >= 20) {
+                advice.push("🎉 Excellent! You're saving " + savingsRate.toFixed(1) + "% of your income. Consider investing your surplus for long-term growth.");
+            } else if (savingsRate >= 10) {
+                advice.push("👍 Good job! You're saving " + savingsRate.toFixed(1) + "% of your income. Try to increase it to 20% for better financial security.");
+            } else {
+                advice.push("💡 You have a positive balance, but consider increasing your savings rate. Aim for at least 10-20% of your income.");
+            }
+        } else {
+            advice.push("⚠️ You're spending more than you earn. Focus on reducing expenses or increasing income to achieve financial stability.");
+            advice.push("🔍 Review your largest expense categories and look for areas to cut back.");
+        }
+        
+        // Category-specific advice
+        const sortedExpenses = Object.entries(expensesByCategory)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 3);
+            
+        if (sortedExpenses.length > 0) {
+            const topCategory = sortedExpenses[0];
+            const topCategoryPercent = ((topCategory[1] / expenses) * 100).toFixed(1);
+            advice.push(`📊 Your largest expense category is ${this.getCategoryLabel(topCategory[0])} (${topCategoryPercent}% of total expenses).`);
+        }
+        
+        // Income advice
+        if (income === 0) {
+            advice.push("💼 No income recorded. Start by adding your income sources to get a complete financial picture.");
+        }
+        
+        // General advice
+        advice.push("📝 Track all transactions regularly to maintain accurate financial records.");
+        advice.push("🎯 Set specific financial goals and review your progress monthly.");
+        
+        return advice.slice(0, 6); // Limit to 6 pieces of advice
+    }
 
-        html2pdf().from(summaryHtml).set(opt).save();
-        this.showSnackbar('Summary downloaded successfully', 'success');
+    generatePieChartSVG(income, expenses) {
+        if (income === 0 && expenses === 0) return '<p style="color: #666;">No data available</p>';
+        
+        const total = income + expenses;
+        const incomePercent = (income / total) * 100;
+        const expensePercent = (expenses / total) * 100;
+        
+        // Calculate angles for pie chart
+        const incomeAngle = (income / total) * 360;
+        const expenseAngle = (expenses / total) * 360;
+        
+        const radius = 80;
+        const centerX = 100;
+        const centerY = 100;
+        
+        // Calculate path for income slice
+        const incomeEndAngle = incomeAngle;
+        const incomeEndX = centerX + radius * Math.cos((incomeEndAngle - 90) * Math.PI / 180);
+        const incomeEndY = centerY + radius * Math.sin((incomeEndAngle - 90) * Math.PI / 180);
+        
+        const incomeArc = incomeAngle > 180 ? 1 : 0;
+        const incomePath = `M ${centerX} ${centerY} L ${centerX} ${centerY - radius} A ${radius} ${radius} 0 ${incomeArc} 1 ${incomeEndX} ${incomeEndY} Z`;
+        
+        // Calculate path for expense slice  
+        const expenseStartAngle = incomeAngle;
+        const expenseStartX = centerX + radius * Math.cos((expenseStartAngle - 90) * Math.PI / 180);
+        const expenseStartY = centerY + radius * Math.sin((expenseStartAngle - 90) * Math.PI / 180);
+        
+        const expenseArc = expenseAngle > 180 ? 1 : 0;
+        const expensePath = `M ${centerX} ${centerY} L ${expenseStartX} ${expenseStartY} A ${radius} ${radius} 0 ${expenseArc} 1 ${centerX} ${centerY - radius} Z`;
+        
+        return `
+            <svg width="200" height="200" viewBox="0 0 200 200">
+                <path d="${incomePath}" fill="#28a745" stroke="white" stroke-width="2"/>
+                <path d="${expensePath}" fill="#dc3545" stroke="white" stroke-width="2"/>
+                <text x="100" y="190" text-anchor="middle" font-size="12" font-family="Arial">
+                    <tspan fill="#28a745">■</tspan> Income ${incomePercent.toFixed(1)}% 
+                    <tspan fill="#dc3545">■</tspan> Expenses ${expensePercent.toFixed(1)}%
+                </text>
+            </svg>
+        `;
+    }
+
+    generateBarChartSVG(expensesByCategory) {
+        const categories = Object.entries(expensesByCategory).sort(([,a], [,b]) => b - a).slice(0, 6);
+        if (categories.length === 0) return '<p style="color: #666;">No expense data</p>';
+        
+        const maxAmount = Math.max(...categories.map(([,amount]) => amount));
+        const chartWidth = 180;
+        const chartHeight = 120;
+        const barWidth = chartWidth / categories.length - 10;
+        const maxBarHeight = 80;
+        
+        let bars = '';
+        let labels = '';
+        
+        categories.forEach(([category, amount], index) => {
+            const barHeight = (amount / maxAmount) * maxBarHeight;
+            const x = 10 + index * (barWidth + 10);
+            const y = chartHeight - barHeight - 20;
+            
+            const color = `hsl(${index * 60}, 70%, 50%)`;
+            
+            bars += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" stroke="white" stroke-width="1"/>`;
+            
+            // Add amount label on top of bar
+            bars += `<text x="${x + barWidth/2}" y="${y - 5}" text-anchor="middle" font-size="8" font-family="Arial">${this.formatCurrency(amount).replace(/[₹$€£¥]/g, '')}</text>`;
+            
+            // Add category label at bottom
+            const categoryLabel = this.getCategoryLabel(category).substring(0, 6);
+            labels += `<text x="${x + barWidth/2}" y="${chartHeight - 5}" text-anchor="middle" font-size="9" font-family="Arial">${categoryLabel}</text>`;
+        });
+        
+        return `
+            <svg width="200" height="140" viewBox="0 0 200 140">
+                ${bars}
+                ${labels}
+            </svg>
+        `;
+    }
+
+    async generateBudgetReportHTML(income, expenses, balance, incomeByCategory, expensesByCategory, advice) {
+        const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        // Get all individual transactions
+        const incomeTransactions = this.state.transactions
+            .filter(t => t.type === 'income')
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+        const expenseTransactions = this.state.transactions
+            .filter(t => t.type === 'expense')
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        const incomeList = incomeTransactions
+            .map(transaction => `
+                <tr>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+                        ${this.getCategoryEmoji(transaction.category)} ${transaction.description}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: center; font-size: 12px; color: #666;">
+                        ${this.getCategoryLabel(transaction.category)}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: center; font-size: 12px; color: #666;">
+                        ${new Date(transaction.date).toLocaleDateString()}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: 'Courier New', monospace; font-size: 13px; color: #059669; font-weight: 600;">
+                        ${this.formatCurrency(transaction.amount)}
+                    </td>
+                </tr>
+            `).join('');
+            
+        const expensesList = expenseTransactions
+            .map(transaction => `
+                <tr>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px;">
+                        ${this.getCategoryEmoji(transaction.category)} ${transaction.description}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: center; font-size: 12px; color: #666;">
+                        ${this.getCategoryLabel(transaction.category)}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: center; font-size: 12px; color: #666;">
+                        ${new Date(transaction.date).toLocaleDateString()}
+                    </td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-family: 'Courier New', monospace; font-size: 13px; color: #dc2626; font-weight: 600;">
+                        ${this.formatCurrency(transaction.amount)}
+                    </td>
+                </tr>
+            `).join('');
+            
+        const pieChartData = this.generatePieChartDataURL(income, expenses);
+        const expenseChartData = this.generateExpenseChartDataURL(expensesByCategory);
+        
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 0.75in;
+                    }
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        line-height: 1.4; 
+                        color: #333; 
+                        margin: 0; 
+                        padding: 0;
+                        font-size: 12px;
+                    }
+                    .page {
+                        width: 100%;
+                        max-width: 8.5in;
+                        margin: 0 auto;
+                        page-break-after: always;
+                    }
+                    .page:last-child {
+                        page-break-after: avoid;
+                    }
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 30px; 
+                        padding: 20px 0;
+                        border-bottom: 2px solid #3b82f6;
+                    }
+                    .header h1 { 
+                        font-size: 28px; 
+                        color: #3b82f6; 
+                        margin: 0 0 10px 0; 
+                        font-weight: bold;
+                    }
+                    .header p { 
+                        color: #666; 
+                        margin: 5px 0; 
+                        font-size: 14px;
+                    }
+                    .summary-box {
+                        background: #f8f9fa;
+                        padding: 20px;
+                        border-radius: 8px;
+                        margin: 20px 0;
+                        border: 1px solid #dee2e6;
+                        text-align: center;
+                    }
+                    .summary-stats {
+                        display: flex;
+                        justify-content: space-around;
+                        margin: 15px 0;
+                    }
+                    .stat-item {
+                        text-align: center;
+                    }
+                    .stat-value {
+                        font-size: 18px;
+                        font-weight: bold;
+                        font-family: 'Courier New', monospace;
+                    }
+                    .stat-income { color: #28a745; }
+                    .stat-expense { color: #dc3545; }
+                    .stat-balance { color: #007bff; }
+                    .stat-label {
+                        font-size: 11px;
+                        color: #666;
+                        margin-top: 5px;
+                    }
+                    .charts-container {
+                        display: flex;
+                        justify-content: space-between;
+                        margin: 20px 0;
+                        gap: 20px;
+                    }
+                    .chart-box {
+                        flex: 1;
+                        text-align: center;
+                        background: white;
+                        padding: 15px;
+                        border: 1px solid #dee2e6;
+                        border-radius: 8px;
+                    }
+                    .chart-title {
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                        color: #333;
+                        font-size: 13px;
+                    }
+                    .transactions-section {
+                        margin-top: 30px;
+                    }
+                    .section-title {
+                        background: #3b82f6;
+                        color: white;
+                        padding: 10px 15px;
+                        margin: 20px 0 10px 0;
+                        font-weight: bold;
+                        font-size: 14px;
+                        border-radius: 5px;
+                    }
+                    table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin-bottom: 20px;
+                        font-size: 11px;
+                    }
+                    th { 
+                        background: #f8f9fa; 
+                        color: #333; 
+                        padding: 8px; 
+                        text-align: left; 
+                        font-weight: bold;
+                        border: 1px solid #dee2e6;
+                        font-size: 11px;
+                    }
+                    td {
+                        border: 1px solid #dee2e6;
+                    }
+                    .total-row { 
+                        background: #e9ecef; 
+                        font-weight: bold; 
+                    }
+                    .balance-section { 
+                        text-align: center; 
+                        padding: 20px; 
+                        margin: 30px 0;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                    }
+                    .balance-positive { 
+                        background: #d4edda; 
+                        color: #155724; 
+                        border: 2px solid #28a745;
+                    }
+                    .balance-negative { 
+                        background: #f8d7da; 
+                        color: #721c24; 
+                        border: 2px solid #dc3545;
+                    }
+                    .advice-section { 
+                        background: #fff3cd; 
+                        border: 1px solid #ffeaa7; 
+                        border-radius: 8px; 
+                        padding: 15px;
+                        margin: 20px 0;
+                    }
+                    .advice-title { 
+                        color: #856404; 
+                        margin: 0 0 10px 0;
+                        font-weight: bold;
+                        font-size: 14px;
+                    }
+                    .advice-list { 
+                        margin: 0; 
+                        padding-left: 20px;
+                        font-size: 12px;
+                    }
+                    .advice-list li { 
+                        margin-bottom: 5px;
+                        line-height: 1.4;
+                    }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        padding-top: 15px; 
+                        border-top: 1px solid #dee2e6; 
+                        color: #666; 
+                        font-size: 10px;
+                    }
+                    .income-row { color: #28a745; }
+                    .expense-row { color: #dc3545; }
+                </style>
+            </head>
+            <body>
+                <div class="page">
+                    <!-- Title Page -->
+                    <div class="header">
+                        <h1>📊 Spendora</h1>
+                        <p><strong>Personal Budget Report</strong></p>
+                        <p>spendora.eknath.dev</p>
+                        <p>Generated on ${currentDate}</p>
+                    </div>
+                    
+                    <!-- Summary Statistics -->
+                    <div class="summary-box">
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <div class="stat-value stat-income">${this.formatCurrency(income)}</div>
+                                <div class="stat-label">Total Income</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value stat-expense">${this.formatCurrency(expenses)}</div>
+                                <div class="stat-label">Total Expenses</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value stat-balance">${this.formatCurrency(balance)}</div>
+                                <div class="stat-label">Net Balance</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="charts-container">
+                        <div class="chart-box">
+                            <div class="chart-title">Income vs Expenses</div>
+                            ${pieChartData ? `<img src="${pieChartData}" alt="Pie Chart" style="width: 200px; height: 200px;">` : '<p>No data available</p>'}
+                        </div>
+                        ${Object.keys(expensesByCategory).length > 0 ? `
+                        <div class="chart-box">
+                            <div class="chart-title">Expense Categories</div>
+                            ${expenseChartData ? `<img src="${expenseChartData}" alt="Bar Chart" style="width: 200px; height: 150px;">` : '<p>No expense data</p>'}
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Balance Status -->
+                    <div class="balance-section ${balance >= 0 ? 'balance-positive' : 'balance-negative'}">
+                        ${balance >= 0 ? '✅' : '⚠️'} Net Balance: ${this.formatCurrency(balance)}
+                        <div style="font-size: 12px; margin-top: 8px; font-weight: normal;">
+                            ${balance >= 0 ? 'Congratulations! You have a positive balance.' : 'Attention: Expenses exceed income.'}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Income Transactions Page -->
+                ${incomeTransactions.length > 0 ? `
+                <div class="page">
+                    <div class="section-title">💰 All Income Transactions (${incomeTransactions.length} transactions)</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 35%;">Description</th>
+                                <th style="width: 20%;">Category</th>
+                                <th style="width: 15%;">Date</th>
+                                <th style="width: 20%; text-align: right;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${incomeList}
+                            <tr class="total-row">
+                                <td style="padding: 8px; font-weight: bold;" colspan="3">Total Income</td>
+                                <td style="padding: 8px; text-align: right; font-family: 'Courier New', monospace; font-weight: bold; color: #28a745;">
+                                    ${this.formatCurrency(income)}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+                
+                <!-- Expense Transactions Page -->
+                ${expenseTransactions.length > 0 ? `
+                <div class="page">
+                    <div class="section-title">💸 All Expense Transactions (${expenseTransactions.length} transactions)</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 35%;">Description</th>
+                                <th style="width: 20%;">Category</th>
+                                <th style="width: 15%;">Date</th>
+                                <th style="width: 20%; text-align: right;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${expensesList}
+                            <tr class="total-row">
+                                <td style="padding: 8px; font-weight: bold;" colspan="3">Total Expenses</td>
+                                <td style="padding: 8px; text-align: right; font-family: 'Courier New', monospace; font-weight: bold; color: #dc3545;">
+                                    ${this.formatCurrency(expenses)}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+                
+                <!-- Advice Page -->
+                <div class="page">
+                    <div class="advice-section">
+                        <h3 class="advice-title">💡 Financial Insights & Recommendations</h3>
+                        <ul class="advice-list">
+                            ${advice.map(tip => `<li>${tip}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="footer">
+                        <p><strong>This report was generated by Spendora - Your Personal Budget Tracker</strong></p>
+                        <p>Visit spendora.eknath.dev for more financial management tools</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
+    generatePieChartDataURL(income, expenses) {
+        if (income === 0 && expenses === 0) return null;
+        
+        try {
+            // Simple canvas-based pie chart
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            const total = income + expenses;
+            const incomeAngle = (income / total) * 2 * Math.PI;
+            
+            const centerX = 150;
+            const centerY = 150;
+            const radius = 120;
+            
+            // Draw income slice
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, 0, incomeAngle);
+            ctx.closePath();
+            ctx.fillStyle = '#10b981';
+            ctx.fill();
+            
+            // Draw expense slice
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, incomeAngle, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            
+            // Add labels
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            
+            if (income > 0) {
+                const incomeX = centerX + Math.cos(incomeAngle / 2) * (radius / 2);
+                const incomeY = centerY + Math.sin(incomeAngle / 2) * (radius / 2);
+                ctx.fillText('Income', incomeX, incomeY);
+            }
+            
+            if (expenses > 0) {
+                const expenseAngle = incomeAngle + (2 * Math.PI - incomeAngle) / 2;
+                const expenseX = centerX + Math.cos(expenseAngle) * (radius / 2);
+                const expenseY = centerY + Math.sin(expenseAngle) * (radius / 2);
+                ctx.fillText('Expenses', expenseX, expenseY);
+            }
+            
+            return canvas.toDataURL();
+        } catch (error) {
+            console.error('Error generating pie chart:', error);
+            return null;
+        }
+    }
+
+    generateExpenseChartDataURL(expensesByCategory) {
+        const categories = Object.entries(expensesByCategory);
+        if (categories.length === 0) return null;
+        
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            const maxAmount = Math.max(...categories.map(([,amount]) => amount));
+            const barWidth = 280 / categories.length;
+            const maxBarHeight = 140;
+            
+            categories.forEach(([category, amount], index) => {
+                const barHeight = (amount / maxAmount) * maxBarHeight;
+                const x = 10 + index * barWidth;
+                const y = 160 - barHeight;
+                
+                // Draw bar
+                ctx.fillStyle = `hsl(${index * 360 / categories.length}, 70%, 50%)`;
+                ctx.fillRect(x, y, barWidth - 5, barHeight);
+                
+                // Add amount label
+                ctx.fillStyle = '#1a1a1a';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(
+                    this.formatCurrency(amount).replace(/[₹$€£¥]/g, ''),
+                    x + barWidth / 2,
+                    y - 5
+                );
+                
+                // Add category label
+                ctx.save();
+                ctx.translate(x + barWidth / 2, 180);
+                ctx.rotate(-Math.PI / 4);
+                ctx.fillText(this.getCategoryLabel(category).substring(0, 8), 0, 0);
+                ctx.restore();
+            });
+            
+            return canvas.toDataURL();
+        } catch (error) {
+            console.error('Error generating expense chart:', error);
+            return null;
+        }
     }
 
     toggleTooltips() {
