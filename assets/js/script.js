@@ -1487,6 +1487,7 @@ class BudgetTracker {
     }
 
     getOverviewChartData(income, expenses) {
+        const total = income + expenses;
         return {
             type: 'doughnut',
             data: {
@@ -1504,7 +1505,46 @@ class BudgetTracker {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#f1f5f9' }
+                        align: 'center',
+                        labels: { 
+                            color: '#ffffff',
+                            font: {
+                                size: 14,
+                                weight: 'normal'
+                            },
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const dataset = data.datasets[0];
+                                        const value = dataset.data[i];
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return {
+                                            text: `${label}: ${percentage}%`,
+                                            fillStyle: dataset.backgroundColor[i],
+                                            strokeStyle: dataset.borderColor[i],
+                                            lineWidth: dataset.borderWidth,
+                                            hidden: false,
+                                            index: i,
+                                            fontColor: '#ffffff'
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
                     }
                 }
             }
@@ -1528,6 +1568,7 @@ class BudgetTracker {
         }
 
         const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16', '#d946ef', '#06b6d4'];
+        const total = Object.values(categoryTotals).reduce((sum, value) => sum + value, 0);
         
         return {
             type: 'pie',
@@ -1545,15 +1586,57 @@ class BudgetTracker {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { color: '#f1f5f9' }
+                        align: 'center',
+                        maxHeight: 100,
+                        labels: { 
+                            color: '#ffffff',
+                            font: {
+                                size: 13,
+                                weight: 'normal'
+                            },
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const dataset = data.datasets[0];
+                                        const value = dataset.data[i];
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return {
+                                            text: `${label}: ${percentage}%`,
+                                            fillStyle: dataset.backgroundColor[i],
+                                            strokeStyle: dataset.borderColor ? dataset.borderColor[i] : dataset.backgroundColor[i],
+                                            lineWidth: dataset.borderWidth,
+                                            hidden: false,
+                                            index: i,
+                                            fontColor: '#ffffff'
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
                     },
                     title: {
                         display: true,
                         text: `${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)} Categories`,
-                        color: '#f1f5f9',
+                        color: '#ffffff',
                         font: {
                             size: 16,
                             weight: 'bold'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
                         }
                     }
                 }
@@ -1582,7 +1665,7 @@ class BudgetTracker {
                     title: {
                         display: true,
                         text: `No ${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)} Data`,
-                        color: '#f1f5f9',
+                        color: '#ffffff',
                         font: {
                             size: 16,
                             weight: 'bold'
