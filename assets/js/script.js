@@ -979,10 +979,10 @@ class BudgetTracker {
             }
             
             this.saveTransactions();
+            this.setupCategoryFilters(); // Refresh category filters BEFORE rendering
             this.renderTransactions();
             this.updateChart();
             this.updateSummary();
-            this.setupCategoryFilters(); // Refresh category filters
             this.showSnackbar('Transaction deleted successfully', 'success', true);
             console.log('Transaction deleted successfully');
         } catch (error) {
@@ -1564,6 +1564,51 @@ class BudgetTracker {
 
         // Check if there's no data for the selected category type
         if (Object.keys(categoryTotals).length === 0) {
+            // Check if there are any transactions of the opposite type
+            const oppositeType = transactionType === 'expense' ? 'income' : 'expense';
+            const oppositeTransactions = this.state.transactions.filter(t => t.type === oppositeType);
+            
+            if (oppositeTransactions.length > 0) {
+                // Automatically switch to the opposite category type
+                this.state.currentCategorySubtype = oppositeType;
+                
+                // Update the radio button selection in the UI
+                const oppositeButton = document.querySelector(`input[name="category-subtype"][value="${oppositeType}"]`);
+                if (oppositeButton) {
+                    oppositeButton.checked = true;
+                }
+                
+                // Reset transaction list filter to show all categories
+                this.state.currentCategoryFilter = 'all';
+                this.updateCategoryFilterUI();
+                this.renderTransactions();
+                
+                // Show a brief message about the automatic switch
+                this.showSnackbar(`Switched to ${oppositeType} categories`, 'info');
+                
+                // Recursively call this function with the new category type
+                return this.getCategoryChartData();
+            }
+            
+            // If no transactions exist at all, switch back to overview chart
+            if (this.state.transactions.length === 0) {
+                this.state.currentChartType = 'overview';
+                const overviewButton = document.querySelector(`input[name="chart-type"][value="overview"]`);
+                if (overviewButton) {
+                    overviewButton.checked = true;
+                }
+                // Hide category subtype selector
+                if (this.elements.categorySubtypeSelector) {
+                    this.elements.categorySubtypeSelector.style.display = 'none';
+                }
+                this.showSnackbar('No transactions available, switched to overview', 'info');
+                // Return overview chart data instead
+                const income = 0;
+                const expenses = 0;
+                return this.getOverviewChartData(income, expenses);
+            }
+            
+            // If no data in the current category but other transactions exist, show empty chart
             return this.getEmptyCategoryChartData(transactionType);
         }
 
@@ -3545,9 +3590,20 @@ Please provide clear, practical, and easy-to-follow recommendations.
             }
         });
 
+        // Check if current category filter still exists
+        if (this.state.currentCategoryFilter !== 'all' && !categories.has(this.state.currentCategoryFilter)) {
+            // Current category no longer exists, reset to "all"
+            console.log(`Category filter "${this.state.currentCategoryFilter}" no longer exists, resetting to "all"`);
+            this.state.currentCategoryFilter = 'all';
+            // Force re-render the transactions list with the new filter
+            setTimeout(() => {
+                this.renderTransactions();
+            }, 0);
+        }
+
         // Create filter tags
         const filterHTML = [
-            '<span class="category-filter-tag active" data-category="all">All Categories</span>',
+            '<span class="category-filter-tag" data-category="all">All Categories</span>',
             ...Array.from(categories).map(category => {
                 const emoji = this.getCategoryEmoji(category);
                 const label = this.getCategoryLabel(category);
@@ -3556,6 +3612,9 @@ Please provide clear, practical, and easy-to-follow recommendations.
         ].join('');
 
         categoryFiltersContainer.innerHTML = filterHTML;
+
+        // Update UI to reflect current filter
+        this.updateCategoryFilterUI();
 
         // Add click handlers
         categoryFiltersContainer.addEventListener('click', (e) => {
