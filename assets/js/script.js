@@ -452,6 +452,7 @@ class BudgetTracker {
     }
 
     async initialize() {
+        this.showSkeletons(true);
         try {
             this.showLoading(true);
             await this.loadConfiguration();
@@ -470,6 +471,26 @@ class BudgetTracker {
             this.showCriticalError('Failed to initialize application. Please refresh the page.');
         } finally {
             this.showLoading(false);
+            this.showSkeletons(false);
+        }
+    }
+
+    showSkeletons(show) {
+        const overviewContent = document.getElementById('budget-overview-content');
+        const overviewSkeleton = document.getElementById('budget-overview-skeleton');
+        const transactionContent = document.getElementById('transaction-list');
+        const transactionSkeleton = document.getElementById('transaction-list-skeleton');
+
+        if (show) {
+            overviewContent.style.display = 'none';
+            overviewSkeleton.style.display = 'block';
+            transactionContent.style.display = 'none';
+            transactionSkeleton.style.display = 'block';
+        } else {
+            overviewContent.style.display = 'block';
+            overviewSkeleton.style.display = 'none';
+            transactionContent.style.display = 'block';
+            transactionSkeleton.style.display = 'none';
         }
     }
 

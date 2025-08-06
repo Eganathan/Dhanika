@@ -277,23 +277,41 @@
                             <p>No Data to Display</p>
                             <small class="text-muted">Add a transaction to see your budget overview.</small>
                         </div>
-                        <canvas id="budget-chart" role="img" aria-label="Budget overview chart"></canvas>
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="fw-bold">Total Income:</span>
-                                <span class="text-success fw-bold" id="total-income">₹0.00</span>
+                        <div id="budget-overview-content">
+                            <canvas id="budget-chart" role="img" aria-label="Budget overview chart"></canvas>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-bold">Total Income:</span>
+                                    <span class="text-success fw-bold" id="total-income">₹0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-bold">Total Expenses:</span>
+                                    <span class="text-danger fw-bold" id="total-expenses">₹0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3 border-top pt-2">
+                                    <span class="fw-bold">Balance:</span>
+                                    <span class="fw-bold" id="balance">₹0.00</span>
+                                </div>
+                                <button class="btn btn-info w-100" id="download-btn" aria-label="Download PDF summary of your budget">
+                                    <i class="bi bi-download" aria-hidden="true"></i> Download Summary
+                                </button>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="fw-bold">Total Expenses:</span>
-                                <span class="text-danger fw-bold" id="total-expenses">₹0.00</span>
+                        </div>
+                        <div id="budget-overview-skeleton">
+                            <div class="skeleton skeleton-chart mb-3"></div>
+                            <div class="skeleton-summary-item">
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text"></div>
                             </div>
-                            <div class="d-flex justify-content-between mb-3 border-top pt-2">
-                                <span class="fw-bold">Balance:</span>
-                                <span class="fw-bold" id="balance">₹0.00</span>
+                            <div class="skeleton-summary-item">
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text"></div>
                             </div>
-                            <button class="btn btn-info w-100" id="download-btn" aria-label="Download PDF summary of your budget">
-                                <i class="bi bi-download" aria-hidden="true"></i> Download Summary
-                            </button>
+                            <div class="skeleton-summary-item">
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text"></div>
+                            </div>
+                            <div class="skeleton skeleton-text" style="height: 40px;"></div>
                         </div>
                     </div>
                 </div>
@@ -339,6 +357,32 @@
                             <small class="text-muted">Your transactions will appear here.</small>
                         </div>
                         <ul id="transaction-list" class="list-group" role="list" aria-label="Transaction list"></ul>
+                        <div id="transaction-list-skeleton">
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
