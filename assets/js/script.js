@@ -30,7 +30,8 @@ class BudgetTracker {
             emptyChartMessage: document.getElementById('empty-chart-message'),
             emptyTransactionMessage: document.getElementById('empty-transaction-message'),
             snackbar: document.getElementById('snackbar'),
-            searchInput: document.getElementById('transaction-search')
+            searchInput: document.getElementById('transaction-search'),
+            freshStartBtn: document.getElementById('fresh-start-btn')
         };
         
         this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
@@ -45,6 +46,11 @@ class BudgetTracker {
         try {
             const storedTransactions = localStorage.getItem('transactions');
             transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+            
+            // Add sample transactions for first-time users
+            if (transactions.length === 0) {
+                transactions = this.createSampleTransactions();
+            }
         } catch (error) {
             console.error('Failed to load transactions from localStorage:', error);
             // Don't show snackbar here as elements aren't initialized yet
@@ -77,6 +83,110 @@ class BudgetTracker {
         };
     }
 
+    createSampleTransactions() {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        const sampleTransactions = [
+            // Income examples
+            {
+                id: String(new Date(currentYear, currentMonth, 1, 9, 0).getTime()),
+                type: 'income',
+                description: 'Monthly Salary',
+                amount: 75000,
+                category: 'salary',
+                tags: 'regular, monthly',
+                date: new Date(currentYear, currentMonth, 1, 9, 0).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 15, 14, 30).getTime()),
+                type: 'income',
+                description: 'Freelance Web Design Project',
+                amount: 25000,
+                category: 'freelance',
+                tags: 'project, design',
+                date: new Date(currentYear, currentMonth, 15, 14, 30).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 22, 11, 15).getTime()),
+                type: 'income',
+                description: 'Stock Dividend',
+                amount: 3500,
+                category: 'investment',
+                tags: 'dividend, stocks',
+                date: new Date(currentYear, currentMonth, 22, 11, 15).toISOString()
+            },
+            
+            // Expense examples
+            {
+                id: String(new Date(currentYear, currentMonth, 2, 19, 45).getTime()),
+                type: 'expense',
+                description: 'Grocery Shopping - Weekly',
+                amount: 3200,
+                category: 'food',
+                tags: 'grocery, weekly',
+                date: new Date(currentYear, currentMonth, 2, 19, 45).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 5, 8, 30).getTime()),
+                type: 'expense',
+                description: 'Metro Card Recharge',
+                amount: 1500,
+                category: 'transportation',
+                tags: 'metro, transport',
+                date: new Date(currentYear, currentMonth, 5, 8, 30).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 8, 21, 0).getTime()),
+                type: 'expense',
+                description: 'Movie Night with Friends',
+                amount: 800,
+                category: 'entertainment',
+                tags: 'movies, friends',
+                date: new Date(currentYear, currentMonth, 8, 21, 0).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 10, 10, 15).getTime()),
+                type: 'expense',
+                description: 'Electricity Bill',
+                amount: 2800,
+                category: 'utilities',
+                tags: 'bill, electricity',
+                date: new Date(currentYear, currentMonth, 10, 10, 15).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 12, 16, 30).getTime()),
+                type: 'expense',
+                description: 'New Running Shoes',
+                amount: 4500,
+                category: 'shopping',
+                tags: 'shoes, fitness',
+                date: new Date(currentYear, currentMonth, 12, 16, 30).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 18, 13, 45).getTime()),
+                type: 'expense',
+                description: 'Monthly SIP Investment',
+                amount: 5000,
+                category: 'savings',
+                tags: 'sip, investment',
+                date: new Date(currentYear, currentMonth, 18, 13, 45).toISOString()
+            },
+            {
+                id: String(new Date(currentYear, currentMonth, 20, 12, 0).getTime()),
+                type: 'expense',
+                description: 'Doctor Consultation',
+                amount: 1200,
+                category: 'healthcare',
+                tags: 'medical, checkup',
+                date: new Date(currentYear, currentMonth, 20, 12, 0).toISOString()
+            }
+        ];
+        
+        return sampleTransactions;
+    }
+
     async loadConfiguration() {
         this.currencyConfig = {
             'INR': { symbol: '₹', name: 'Indian Rupee', decimals: 2, locale: 'en-IN' },
@@ -99,6 +209,7 @@ class BudgetTracker {
     bindEvents() {
         this.elements.transactionForm?.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
         this.elements.cancelEditBtn?.addEventListener('click', () => this.cancelEdit());
+        this.elements.freshStartBtn?.addEventListener('click', () => this.handleFreshStart());
         this.elements.downloadBtn?.addEventListener('click', () => this.downloadSummary());
         this.elements.exportBtnHeader?.addEventListener('click', () => this.showExportModal());
         this.elements.importFileHeader?.addEventListener('change', (e) => this.handleFileSelect(e));
@@ -880,6 +991,23 @@ class BudgetTracker {
         }
     }
 
+    clearAllTransactions() {
+        try {
+            console.log('Clearing all transactions');
+            this.state.transactions = [];
+            this.saveTransactions();
+            this.renderTransactions();
+            this.updateChart();
+            this.updateSummary();
+            this.setupCategoryFilters();
+            this.showSnackbar('All transactions cleared. Ready for fresh start!', 'success', true);
+            console.log('All transactions cleared successfully');
+        } catch (error) {
+            console.error('Error clearing transactions:', error);
+            this.showSnackbar('Failed to clear transactions. Please try again.', 'error', true);
+        }
+    }
+
     editTransaction(id) {
         const transaction = this.state.transactions.find(t => t.id === id);
         if (!transaction) return;
@@ -910,6 +1038,97 @@ class BudgetTracker {
     cancelEdit() {
         this.state.editingTransactionId = null;
         this.resetForm();
+    }
+
+    handleFreshStart() {
+        if (this.state.transactions.length === 0) {
+            this.showSnackbar('No transactions to clear', 'info', true);
+            return;
+        }
+
+        this.showFreshStartConfirmation();
+    }
+
+    showFreshStartConfirmation() {
+        const transactionCount = this.state.transactions.length;
+        
+        // Create modern confirmation dialog
+        const modal = document.createElement('div');
+        modal.className = 'delete-confirmation-modal';
+        modal.innerHTML = `
+            <div class="modal-backdrop">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                            Fresh Start Warning
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>This will permanently DELETE ALL ${transactionCount} transactions from your budget tracker.</strong></p>
+                        <div class="fresh-start-warning">
+                            <p>You will lose:</p>
+                            <ul class="text-muted">
+                                <li>All income and expense records</li>
+                                <li>Transaction history and categories</li>
+                                <li>All your financial data</li>
+                            </ul>
+                        </div>
+                        <p class="text-danger small mt-3">
+                            <i class="bi bi-exclamation-circle me-1"></i>
+                            This action CANNOT BE UNDONE! You'll start with a completely fresh slate.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                        <button type="button" class="btn btn-warning confirm-btn">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Fresh Start
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // Add event listeners
+        const cancelBtn = modal.querySelector('.cancel-btn');
+        const confirmBtn = modal.querySelector('.confirm-btn');
+        const backdrop = modal.querySelector('.modal-backdrop');
+
+        const closeModal = () => {
+            modal.classList.add('closing');
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 200);
+        };
+
+        cancelBtn.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closeModal();
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            this.clearAllTransactions();
+            closeModal();
+        });
+
+        // Show modal with animation
+        setTimeout(() => modal.classList.add('show'), 10);
+        
+        // Focus management
+        confirmBtn.focus();
+        
+        // Keyboard handling
+        const handleKeydown = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleKeydown);
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
     }
 
     resetForm() {
