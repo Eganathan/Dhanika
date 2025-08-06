@@ -1731,3 +1731,120 @@ body.loading::after {
         margin-bottom: 0;
     }
 }
+
+/* Export and Import Modal Styling */
+#exportModal .modal-content,
+#importModal .modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+#exportModal .modal-header,
+#importModal .modal-header {
+    background: var(--surface-bg);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+#exportModal .modal-title,
+#importModal .modal-title {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+}
+
+#exportModal .modal-body,
+#importModal .modal-body {
+    background: var(--card-bg);
+    padding: var(--spacing-xl);
+}
+
+#exportModal .form-label,
+#importModal .form-label {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+}
+
+#exportModal .form-text,
+#importModal .form-text {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+#exportModal .form-control,
+#importModal .form-control {
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: var(--radius-md);
+}
+
+#exportModal .form-control::placeholder,
+#importModal .form-control::placeholder {
+    color: var(--text-muted);
+}
+
+#exportModal .form-control:focus,
+#importModal .form-control:focus {
+    background: var(--surface-bg);
+    border-color: var(--primary-color);
+    color: var(--text-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#exportModal .form-check-label,
+#importModal .form-check-label {
+    color: var(--text-color);
+    font-weight: 400;
+}
+
+#exportModal .form-check-input,
+#importModal .form-check-input {
+    background-color: var(--surface-bg);
+    border-color: var(--border-color);
+}
+
+#exportModal .form-check-input:checked,
+#importModal .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+#exportModal .modal-footer,
+#importModal .modal-footer {
+    background: var(--surface-bg);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+#exportModal .btn-close,
+#importModal .btn-close {
+    filter: invert(1);
+    opacity: 0.8;
+}
+
+#exportModal .btn-close:hover,
+#importModal .btn-close:hover {
+    opacity: 1;
+}
+
+/* Alert styling in modals */
+#importModal .alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fecaca;
+}
+
+#importModal .alert-danger .bi {
+    color: var(--danger-color);
+}
+
+/* Email fields visibility */
+#emailFields {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}

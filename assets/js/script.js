@@ -97,8 +97,8 @@ class BudgetTracker {
         this.elements.transactionForm?.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
         this.elements.cancelEditBtn?.addEventListener('click', () => this.cancelEdit());
         this.elements.downloadBtn?.addEventListener('click', () => this.downloadSummary());
-        this.elements.exportBtnHeader?.addEventListener('click', () => this.exportData());
-        this.elements.importFileHeader?.addEventListener('change', (e) => this.importData(e));
+        this.elements.exportBtnHeader?.addEventListener('click', () => this.showExportModal());
+        this.elements.importFileHeader?.addEventListener('change', (e) => this.handleFileSelect(e));
         this.elements.tooltipToggle?.addEventListener('click', () => this.toggleTooltips());
         
         // Help section toggle
@@ -125,6 +125,135 @@ class BudgetTracker {
         document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
             item.addEventListener('click', (e) => this.changeCurrency(e));
         });
+
+        // Export/Import modal event listeners
+        this.bindModalEvents();
+    }
+
+    bindModalEvents() {
+        // Export modal events
+        const exportModal = document.getElementById('exportModal');
+        const confirmExport = document.getElementById('confirmExport');
+        const emailMethodRadio = document.getElementById('emailMethod');
+        const downloadMethodRadio = document.getElementById('downloadMethod');
+        const emailFields = document.getElementById('emailFields');
+
+        // Show/hide email fields based on method selection
+        if (emailMethodRadio && downloadMethodRadio && emailFields) {
+            emailMethodRadio.addEventListener('change', () => {
+                emailFields.style.display = emailMethodRadio.checked ? 'block' : 'none';
+            });
+            downloadMethodRadio.addEventListener('change', () => {
+                emailFields.style.display = emailMethodRadio.checked ? 'block' : 'none';
+            });
+        }
+
+        // Handle export confirmation
+        if (confirmExport) {
+            confirmExport.addEventListener('click', async () => {
+                const passphrase = document.getElementById('exportPassphrase').value;
+                const method = document.querySelector('input[name="exportMethod"]:checked').value;
+                const email = document.getElementById('recipientEmail').value;
+
+                if (!passphrase) {
+                    this.showSnackbar('Please enter a passphrase', 'error');
+                    return;
+                }
+
+                if (method === 'email' && !email) {
+                    this.showSnackbar('Please enter an email address', 'error');
+                    return;
+                }
+
+                try {
+                    await this.exportDataEncrypted(passphrase, method, email);
+                    
+                    // Hide modal and reset form
+                    const modal = bootstrap.Modal.getInstance(exportModal);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    document.getElementById('exportForm').reset();
+                    emailFields.style.display = 'none';
+                } catch (error) {
+                    console.error('Export error:', error);
+                }
+            });
+        }
+
+        // Import modal events
+        const importModal = document.getElementById('importModal');
+        const confirmImport = document.getElementById('confirmImport');
+
+        if (confirmImport) {
+            confirmImport.addEventListener('click', async () => {
+                const passphrase = document.getElementById('importPassphrase').value;
+                
+                if (!passphrase) {
+                    this.showSnackbar('Please enter a passphrase', 'error');
+                    return;
+                }
+
+                if (this.pendingImportFile) {
+                    // Hide error message
+                    const errorDiv = document.getElementById('importError');
+                    if (errorDiv) {
+                        errorDiv.classList.add('d-none');
+                    }
+                    
+                    await this.importDataEncrypted(this.pendingImportFile, passphrase);
+                    
+                    // Reset form
+                    document.getElementById('importForm').reset();
+                    this.pendingImportFile = null;
+                }
+            });
+        }
+
+        // Reset modals when closed
+        if (exportModal) {
+            exportModal.addEventListener('hidden.bs.modal', () => {
+                document.getElementById('exportForm').reset();
+                emailFields.style.display = 'none';
+            });
+        }
+
+        if (importModal) {
+            importModal.addEventListener('hidden.bs.modal', () => {
+                document.getElementById('importForm').reset();
+                const errorDiv = document.getElementById('importError');
+                if (errorDiv) {
+                    errorDiv.classList.add('d-none');
+                }
+                this.pendingImportFile = null;
+            });
+        }
+    }
+
+    // Handle file selection for import
+    handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check if file looks like it might be encrypted
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const content = JSON.parse(event.target.result);
+                if (content.encrypted || content.version === '1.0') {
+                    // This looks like an encrypted file, show passphrase modal
+                    this.showImportModal(file);
+                } else {
+                    // This looks like a regular file, import directly
+                    this.importData(e);
+                }
+            } catch (error) {
+                // File might be encrypted but parsing failed, show passphrase modal
+                this.showImportModal(file);
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
     }
 
     initializeMobileMenu() {
@@ -207,7 +336,7 @@ class BudgetTracker {
         const mobileExportBtn = document.getElementById('mobile-export-btn');
         if (mobileExportBtn) {
             mobileExportBtn.addEventListener('click', () => {
-                this.exportData();
+                this.showExportModal();
                 this.closeMobileMenu();
             });
         }
@@ -221,7 +350,7 @@ class BudgetTracker {
             });
             
             mobileImportFile.addEventListener('change', (e) => {
-                this.importData(e);
+                this.handleFileSelect(e);
                 this.closeMobileMenu();
             });
         }
@@ -1185,6 +1314,284 @@ class BudgetTracker {
         
         reader.readAsText(file);
         e.target.value = '';
+    }
+
+    // Encryption utility functions
+    encryptData(data, passphrase) {
+        try {
+            const salt = CryptoJS.lib.WordArray.random(128/8);
+            const key = CryptoJS.PBKDF2(passphrase, salt, {
+                keySize: 256/32,
+                iterations: 1000
+            });
+            
+            const iv = CryptoJS.lib.WordArray.random(128/8);
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, {
+                iv: iv,
+                padding: CryptoJS.pad.Pkcs7,
+                mode: CryptoJS.mode.CBC
+            });
+            
+            const result = {
+                encrypted: encrypted.toString(),
+                salt: salt.toString(),
+                iv: iv.toString(),
+                iterations: 1000,
+                keySize: 256,
+                version: '1.0'
+            };
+            
+            return JSON.stringify(result);
+        } catch (error) {
+            console.error('Encryption error:', error);
+            throw new Error('Failed to encrypt data');
+        }
+    }
+
+    decryptData(encryptedData, passphrase) {
+        try {
+            const data = JSON.parse(encryptedData);
+            
+            if (!data.encrypted || !data.salt || !data.iv) {
+                throw new Error('Invalid encrypted file format');
+            }
+            
+            const salt = CryptoJS.enc.Hex.parse(data.salt);
+            const iv = CryptoJS.enc.Hex.parse(data.iv);
+            
+            const key = CryptoJS.PBKDF2(passphrase, salt, {
+                keySize: data.keySize/32 || 256/32,
+                iterations: data.iterations || 1000
+            });
+            
+            const decrypted = CryptoJS.AES.decrypt(data.encrypted, key, {
+                iv: iv,
+                padding: CryptoJS.pad.Pkcs7,
+                mode: CryptoJS.mode.CBC
+            });
+            
+            const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+            if (!decryptedText) {
+                throw new Error('Invalid passphrase');
+            }
+            
+            return JSON.parse(decryptedText);
+        } catch (error) {
+            console.error('Decryption error:', error);
+            if (error.message === 'Invalid passphrase') {
+                throw error;
+            }
+            throw new Error('Failed to decrypt data');
+        }
+    }
+
+    // New export function that shows modal
+    showExportModal() {
+        const exportModal = document.getElementById('exportModal');
+        if (exportModal) {
+            const modal = new bootstrap.Modal(exportModal);
+            modal.show();
+        }
+    }
+
+    // Updated export function with encryption
+    async exportDataEncrypted(passphrase, method, email = null) {
+        try {
+            const data = {
+                transactions: this.state.transactions,
+                currency: this.state.currentCurrency,
+                currencySymbol: this.state.currentCurrencySymbol,
+                exportDate: new Date().toISOString(),
+                version: '2.0',
+                encrypted: true
+            };
+
+            const encryptedData = this.encryptData(data, passphrase);
+            const filename = `budget-backup-encrypted-${new Date().toISOString().split('T')[0]}.json`;
+
+            if (method === 'download') {
+                const dataBlob = new Blob([encryptedData], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                this.showSnackbar('Encrypted backup downloaded successfully', 'success');
+            } else if (method === 'email' && email) {
+                await this.sendBackupEmail(email, encryptedData, filename);
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showSnackbar('Failed to export data: ' + error.message, 'error');
+        }
+    }
+
+    // Send backup via email
+    async sendBackupEmail(email, encryptedData, filename) {
+        try {
+            this.showSnackbar('Sending email...', 'info');
+            
+            const response = await fetch('send_backup.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    encryptedData: encryptedData,
+                    filename: filename
+                })
+            });
+
+            // Check if response is valid JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // If not JSON, get the text to see what went wrong
+                const responseText = await response.text();
+                console.error('Non-JSON response:', responseText);
+                throw new Error('Server returned invalid response format');
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSnackbar('✅ Encrypted backup sent successfully to ' + email, 'success');
+            } else if (result.fallback) {
+                // Handle fallback case where email failed but backup was saved
+                this.showSnackbar('⚠️ ' + result.message, 'warning');
+                
+                // Offer download as alternative
+                if (confirm('Email delivery failed. Would you like to download the backup file instead?')) {
+                    this.downloadBackupFile(encryptedData, filename);
+                }
+            } else {
+                throw new Error(result.message || 'Unknown error occurred');
+            }
+        } catch (error) {
+            console.error('Email sending error:', error);
+            
+            // Provide fallback option
+            const errorMessage = error.message || 'Failed to send email';
+            this.showSnackbar('❌ ' + errorMessage, 'error');
+            
+            // Ask user if they want to download instead
+            setTimeout(() => {
+                if (confirm('Email delivery failed. Would you like to download the encrypted backup instead?')) {
+                    this.downloadBackupFile(encryptedData, filename);
+                }
+            }, 1000);
+        }
+    }
+
+    // Helper function to download backup file as fallback
+    downloadBackupFile(encryptedData, filename) {
+        try {
+            const dataBlob = new Blob([encryptedData], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            this.showSnackbar('💾 Encrypted backup downloaded successfully', 'success');
+        } catch (error) {
+            console.error('Download error:', error);
+            this.showSnackbar('Failed to download backup file', 'error');
+        }
+    }
+
+    // New import function that shows modal for passphrase
+    showImportModal(file) {
+        this.pendingImportFile = file;
+        const importModal = document.getElementById('importModal');
+        if (importModal) {
+            const modal = new bootstrap.Modal(importModal);
+            modal.show();
+        }
+    }
+
+    // Updated import function with decryption
+    async importDataEncrypted(file, passphrase) {
+        try {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    let data;
+                    const fileContent = event.target.result;
+                    
+                    // Try to parse as encrypted format first
+                    try {
+                        const parsedContent = JSON.parse(fileContent);
+                        if (parsedContent.encrypted || parsedContent.version === '1.0') {
+                            // This is an encrypted file
+                            data = this.decryptData(fileContent, passphrase);
+                        } else {
+                            // This is a regular unencrypted file
+                            data = parsedContent;
+                        }
+                    } catch (parseError) {
+                        // Try decryption in case it's encrypted but parsing failed
+                        data = this.decryptData(fileContent, passphrase);
+                    }
+                    
+                    if (data.transactions && Array.isArray(data.transactions)) {
+                        this.state.transactions = data.transactions;
+                        
+                        if (data.currency) {
+                            this.state.currentCurrency = data.currency;
+                            localStorage.setItem('selectedCurrency', data.currency);
+                        }
+                        
+                        if (data.currencySymbol) {
+                            this.state.currentCurrencySymbol = data.currencySymbol;
+                            localStorage.setItem('selectedCurrencySymbol', data.currencySymbol);
+                        }
+                        
+                        this.saveTransactions();
+                        this.initializeCurrency();
+                        this.renderTransactions();
+                        this.updateChart();
+                        this.updateSummary();
+                        
+                        this.showSnackbar('Data imported successfully', 'success');
+                        
+                        // Hide import modal
+                        const importModal = bootstrap.Modal.getInstance(document.getElementById('importModal'));
+                        if (importModal) {
+                            importModal.hide();
+                        }
+                    } else {
+                        this.showSnackbar('Invalid file format', 'error');
+                    }
+                } catch (error) {
+                    console.error('Import error:', error);
+                    if (error.message === 'Invalid passphrase') {
+                        // Show error in modal
+                        const errorDiv = document.getElementById('importError');
+                        if (errorDiv) {
+                            errorDiv.classList.remove('d-none');
+                        }
+                        return;
+                    }
+                    this.showSnackbar('Error reading encrypted file', 'error');
+                }
+            };
+            
+            reader.onerror = () => {
+                this.showSnackbar('Error reading file', 'error');
+            };
+            
+            reader.readAsText(file);
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showSnackbar('Failed to import data: ' + error.message, 'error');
+        }
     }
 
     async downloadSummary() {
