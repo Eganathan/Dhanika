@@ -101,6 +101,10 @@ class BudgetTracker {
         this.elements.importFileHeader?.addEventListener('change', (e) => this.importData(e));
         this.elements.tooltipToggle?.addEventListener('click', () => this.toggleTooltips());
         
+        // Help section toggle
+        const helpToggle = document.getElementById('toggle-help-section');
+        helpToggle?.addEventListener('click', () => this.toggleHelpSection());
+        
         // Search input event binding with debugging
         if (this.elements.searchInput) {
             console.log('Search input found, binding events');
@@ -280,6 +284,44 @@ class BudgetTracker {
         this.showSnackbar(`Tooltips ${this.state.tooltipsEnabled ? 'enabled' : 'disabled'}`, 'info');
     }
 
+    toggleHelpSection() {
+        const helpContent = document.getElementById('help-section-content');
+        const toggleIcon = document.querySelector('#toggle-help-section i');
+        
+        if (helpContent && toggleIcon) {
+            const isCollapsed = helpContent.style.display === 'none';
+            
+            if (isCollapsed) {
+                helpContent.style.display = 'block';
+                toggleIcon.className = 'bi bi-chevron-up';
+            } else {
+                helpContent.style.display = 'none';
+                toggleIcon.className = 'bi bi-chevron-down';
+            }
+            
+            // Save state to localStorage
+            localStorage.setItem('helpSectionCollapsed', !isCollapsed);
+        }
+    }
+
+    initializeHelpSection() {
+        const helpContent = document.getElementById('help-section-content');
+        const toggleIcon = document.querySelector('#toggle-help-section i');
+        
+        if (helpContent && toggleIcon) {
+            // Check if user has collapsed the help section before
+            const isCollapsed = localStorage.getItem('helpSectionCollapsed') === 'true';
+            
+            if (isCollapsed) {
+                helpContent.style.display = 'none';
+                toggleIcon.className = 'bi bi-chevron-down';
+            } else {
+                helpContent.style.display = 'block';
+                toggleIcon.className = 'bi bi-chevron-up';
+            }
+        }
+    }
+
     async initialize() {
         try {
             this.showLoading(true);
@@ -292,6 +334,7 @@ class BudgetTracker {
             this.setupTooltips();
             this.setupCategoryFilters();
             this.setupKeyboardShortcuts();
+            this.initializeHelpSection();
             console.log('BudgetTracker initialized successfully');
         } catch (error) {
             console.error('Failed to initialize BudgetTracker:', error);

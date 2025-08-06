@@ -1654,3 +1654,80 @@ body.loading::after {
         font-size: var(--font-size-lg);
     }
 }
+
+/* Help section specific styles */
+#help-section-content {
+    transition: all var(--transition-normal);
+}
+
+#toggle-help-section {
+    transition: all var(--transition-fast);
+}
+
+#toggle-help-section:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#toggle-help-section i {
+    transition: transform var(--transition-fast);
+}
+
+.help-guide-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.help-guide-item {
+    position: relative;
+}
+
+/* Content wrapper for responsive ordering */
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Desktop: help section at top, main content below */
+@media (min-width: 768px) {
+    .help-section-container {
+        order: 1;
+    }
+    
+    main.container {
+        order: 2;
+    }
+}
+
+/* Mobile: main content at top, help section at bottom */
+@media (max-width: 767.98px) {
+    .help-section-container {
+        order: 2;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    main.container {
+        order: 1;
+        margin-top: 120px;
+        transition: margin-top var(--transition-normal);
+    }
+    
+    /* Adjust main content when header is scrolled */
+    header.scrolled ~ .content-wrapper main.container {
+        margin-top: 80px;
+    }
+    
+    /* Ensure proper spacing for help section content on mobile */
+    #help-section-content {
+        padding: 1.5rem 1rem;
+    }
+    
+    /* Stack the columns on mobile for better readability */
+    .help-section-container .col-md-6 {
+        margin-bottom: 2rem;
+    }
+    
+    .help-section-container .col-md-6:last-child {
+        margin-bottom: 0;
+    }
+}
