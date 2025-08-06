@@ -1596,6 +1596,13 @@ class BudgetTracker {
 
     async downloadSummary() {
         try {
+            const baseName = prompt("Enter a name for your report:", "Spendora-Report");
+            if (!baseName) {
+                this.showSnackbar('Download cancelled', 'info');
+                return;
+            }
+            const fileName = `${baseName}-${new Date().toISOString().split('T')[0]}.pdf`;
+
             this.showLoading(true);
             
             const income = this.state.transactions
@@ -1640,7 +1647,7 @@ class BudgetTracker {
                 const pdf = new jsPDF('p', 'px', [794, 1123]);
                 const imgData = canvas.toDataURL('image/png');
                 pdf.addImage(imgData, 'PNG', 0, 0, 794, Math.min(canvas.height, 1123));
-                pdf.save(`Spendora-Budget-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+                pdf.save(fileName);
             }
             
             document.body.removeChild(pdfContainer);
