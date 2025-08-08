@@ -1,9 +1,9 @@
-# Spendora - Agent Instructions
+# Dhanika - Agent Instructions
 
 ## Project Overview
-**Spendora** is a modern, privacy-first budget tracking web application designed to help users manage their finances with complete data control and beautiful user experience.
+**Dhanika** is a modern, privacy-first budget tracking web application designed to help users manage their finances with complete data control and beautiful user experience.
 
-**Website**: https://spendora.eknath.dev
+**Website**: https://dhanika.eknath.dev
 
 ## Vision & Mission
 
@@ -182,9 +182,9 @@ Background: Linear gradient from #667eea to #764ba2
 
 ### Logo & Branding
 - **Icon**: `bi-graph-up-arrow` (Bootstrap Icons) in primary color
-- **Name**: "Spendora" (combination of "Spend" + "Flora/Aura")
+- **Name**: "Dhanika" (Sanskrit name meaning "wealthy" or "grain")
 - **Tagline**: "Smart Budget Tracker" or "Privacy-First Finance"
-- **Domain**: spendora.eknath.dev
+- **Domain**: dhanika.eknath.dev
 
 ### Communication
 - **Privacy First**: Always lead with privacy benefits
@@ -215,7 +215,7 @@ Background: Linear gradient from #667eea to #764ba2
 ### Environment Setup
 - **Development**: Local file system with live server
 - **Staging**: GitHub Pages or similar static hosting
-- **Production**: CDN-optimized static hosting (spendora.eknath.dev)
+- **Production**: CDN-optimized static hosting (dhanika.eknath.dev)
 
 ### Performance Monitoring
 - **Core Web Vitals**: LCP, FID, CLS optimization
@@ -229,4 +229,4 @@ Background: Linear gradient from #667eea to #764ba2
 
 ---
 
-*This document serves as the comprehensive guide for anyone working on the Spendora project. All development decisions should align with these principles and guidelines.*
+*This document serves as the comprehensive guide for anyone working on the Dhanika project. All development decisions should align with these principles and guidelines.*
