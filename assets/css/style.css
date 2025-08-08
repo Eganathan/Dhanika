@@ -1104,70 +1104,21 @@ body.loading::after {
     }
 }
 
-/* Desktop and Large Screen Optimizations */
+/* Desktop and Large Screen Optimizations with enhanced spacing */
 @media (min-width: 768px) {
     .container {
         max-width: 1200px;
+        padding-left: var(--spacing-xl);
+        padding-right: var(--spacing-xl);
     }
     
     .top-section {
-        margin-bottom: var(--spacing-2xl);
-        gap: var(--spacing-lg);
+        margin-bottom: 3rem;
+        gap: var(--spacing-2xl);
     }
     
     .chart-container .card-body {
-        min-height: 350px;
-    }
-    
-    .card-form .card-body,
-    .chart-container .card-body {
-        padding: var(--spacing-xl);
-    }
-    
-    h1 {
-        font-size: 2.25rem;
-    }
-    
-    h2 {
-        font-size: 1.5rem;
-        margin-bottom: var(--spacing-lg);
-    }
-    
-    .btn {
-        padding: var(--spacing-sm) var(--spacing-lg);
-        font-size: var(--font-size-base);
-        min-height: 42px;
-    }
-    
-    .btn-sm {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        min-height: 32px;
-    }
-    
-    .form-control, .form-select {
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--font-size-base);
-        min-height: 44px;
-    }
-    
-    /* Better spacing for form elements */
-    .mb-3 {
-        margin-bottom: var(--spacing-lg);
-    }
-    
-    .section-divider {
-        margin: var(--spacing-2xl) 0;
-    }
-}
-
-@media (min-width: 992px) {
-    .container {
-        max-width: 1300px;
-    }
-    
-    .top-section {
-        gap: var(--spacing-xl);
+        min-height: 400px;
     }
     
     .card-form .card-body,
@@ -1175,66 +1126,136 @@ body.loading::after {
         padding: var(--spacing-2xl);
     }
     
-    .chart-container .card-body {
-        min-height: 380px;
-    }
-    
     h1 {
-        font-size: 2.5rem;
+        font-size: 2.25rem;
+        margin-bottom: var(--spacing-xl);
     }
     
     h2 {
         font-size: 1.75rem;
+        margin-bottom: var(--spacing-xl);
     }
     
     .btn {
         padding: var(--spacing-md) var(--spacing-xl);
-        min-height: 44px;
+        font-size: var(--font-size-base);
+        min-height: 48px;
+    }
+    
+    .btn-sm {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-size: var(--font-size-sm);
+        min-height: 36px;
     }
     
     .form-control, .form-select {
-        padding: var(--spacing-md) var(--spacing-lg);
-        min-height: 48px;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        font-size: var(--font-size-lg);
+        min-height: 56px;
+    }
+    
+    /* Better spacing for form elements */
+    .mb-3 {
+        margin-bottom: var(--spacing-2xl);
+    }
+    
+    .section-divider {
+        margin: 3rem 0;
+    }
+}
+
+@media (min-width: 992px) {
+    .container {
+        max-width: 1400px;
+        padding-left: var(--spacing-2xl);
+        padding-right: var(--spacing-2xl);
+    }
+    
+    .top-section {
+        gap: 3rem;
+    }
+    
+    .card-form .card-body,
+    .chart-container .card-body {
+        padding: 3rem;
+    }
+    
+    .chart-container .card-body {
+        min-height: 420px;
+    }
+    
+    h1 {
+        font-size: 2.75rem;
+        margin-bottom: var(--spacing-2xl);
+    }
+    
+    h2 {
+        font-size: 2rem;
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .btn {
+        padding: var(--spacing-lg) var(--spacing-2xl);
+        min-height: 52px;
+        font-size: var(--font-size-lg);
+    }
+    
+    .form-control, .form-select {
+        padding: var(--spacing-lg) var(--spacing-2xl);
+        min-height: 60px;
+        font-size: var(--font-size-lg);
     }
 }
 
 @media (min-width: 1200px) {
     .container {
-        max-width: 1400px;
+        max-width: 1600px;
+        padding-left: 3rem;
+        padding-right: 3rem;
     }
     
     .equal-height-row {
-        gap: var(--spacing-2xl);
+        gap: 3rem;
     }
     
     .card-body {
-        padding: 2.5rem;
+        padding: 3.5rem;
     }
     
     .chart-container canvas {
-        max-height: 350px !important;
+        max-height: 380px !important;
     }
     
     h1 {
-        font-size: 3rem;
+        font-size: 3.25rem;
+        margin-bottom: 3rem;
     }
     
     h2 {
-        font-size: 2rem;
+        font-size: 2.25rem;
+        margin-bottom: var(--spacing-2xl);
+    }
+    
+    .top-section {
+        gap: 4rem;
+    }
+    
+    .section-divider {
+        margin: 5rem 0;
     }
 }
 
-/* Mobile Responsive Design */
+/* Mobile Responsive Design with enhanced spacing */
 @media (max-width: 767px) {
     .top-section {
         display: block !important;
-        margin-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-2xl);
     }
     
     .top-section .col-md-6 {
         max-width: 100% !important;
         width: 100% !important;
-        margin-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-2xl);
     }
     
     .top-section .col-md-6:last-child {
@@ -1305,38 +1326,65 @@ body.loading::after {
     }
     
     .card-body {
-        padding: var(--spacing-lg);
+        padding: var(--spacing-xl);
     }
     
     .section-divider {
-        margin: var(--spacing-xl) 0;
+        margin: var(--spacing-2xl) 0;
+    }
+    
+    /* Ensure proper spacing in form elements on mobile */
+    .form-control, .form-select {
+        padding: var(--spacing-lg);
+        font-size: var(--font-size-lg);
+        min-height: 52px;
+    }
+    
+    .btn {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--font-size-lg);
+        min-height: 48px;
     }
 }
 
 @media (max-width: 576px) {
     header .container {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-md);
     }
     
     .container {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-lg);
     }
     
     h1 {
         font-size: var(--font-size-2xl);
+        margin-bottom: var(--spacing-xl);
     }
     
     h2 {
         font-size: var(--font-size-xl);
+        margin-bottom: var(--spacing-lg);
     }
     
     .card-body {
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
     
     .btn {
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-size: var(--font-size-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--font-size-base);
+        min-height: 44px;
+    }
+    
+    .form-control, .form-select {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--font-size-base);
+        min-height: 48px;
+    }
+    
+    .list-group-item {
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
     }
 }
 
@@ -1797,33 +1845,36 @@ body.loading::after {
     }
 }
 
-/* Mobile: main content at top, help section at bottom */
+/* Mobile: main content at top, help section at bottom with better spacing */
 @media (max-width: 767.98px) {
     .help-section-container {
         order: 2;
-        margin-top: 2rem;
-        margin-bottom: 2rem;
+        margin-top: var(--spacing-2xl);
+        margin-bottom: var(--spacing-2xl);
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
     }
     
     main.container {
         order: 1;
-        margin-top: 120px;
+        margin-top: 140px;
+        padding-top: var(--spacing-2xl);
         transition: margin-top var(--transition-normal);
     }
     
     /* Adjust main content when header is scrolled */
     header.scrolled ~ .content-wrapper main.container {
-        margin-top: 80px;
+        margin-top: 100px;
     }
     
     /* Ensure proper spacing for help section content on mobile */
     #help-section-content {
-        padding: 1.5rem 1rem;
+        padding: var(--spacing-xl) var(--spacing-lg);
     }
     
-    /* Stack the columns on mobile for better readability */
+    /* Stack the columns on mobile for better readability with improved spacing */
     .help-section-container .col-md-6 {
-        margin-bottom: 2rem;
+        margin-bottom: var(--spacing-2xl);
     }
     
     .help-section-container .col-md-6:last-child {
@@ -2100,4 +2151,87 @@ body.loading::after {
 #copy-prompt-btn:hover {
     background-color: var(--primary-color);
     color: white;
+}
+
+/* Additional spacing improvements for better visual hierarchy */
+.transactions-card {
+    margin-top: var(--spacing-2xl);
+}
+
+.transactions-card .card-body {
+    padding-top: var(--spacing-2xl);
+}
+
+/* Better spacing for button groups */
+.btn-group .btn {
+    margin-right: var(--spacing-xs);
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Improved spacing for filter sections */
+.mb-3 .row {
+    margin-bottom: var(--spacing-lg);
+}
+
+.mb-3 .col-md-6 {
+    margin-bottom: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .mb-3 .col-md-6 {
+        margin-bottom: 0;
+    }
+}
+
+/* Better spacing for transaction meta information */
+.transaction-meta {
+    margin-top: var(--spacing-xs);
+    gap: var(--spacing-sm);
+}
+
+/* Improved chart container spacing */
+.chart-container .mt-3 {
+    margin-top: var(--spacing-2xl) !important;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Better spacing for budget overview content */
+#budget-overview-content .d-flex {
+    margin-bottom: var(--spacing-md);
+}
+
+#budget-overview-content .border-top {
+    padding-top: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+/* Enhanced footer spacing */
+footer {
+    margin-top: 4rem;
+    padding: var(--spacing-2xl) 0;
+}
+
+footer .container {
+    padding-top: var(--spacing-xl);
+    padding-bottom: var(--spacing-xl);
+}
+
+/* Better spacing for help section list items */
+.help-guide-list .help-guide-item {
+    margin-bottom: var(--spacing-lg);
+    padding-left: var(--spacing-md);
+}
+
+/* Improved modal spacing */
+.modal-body {
+    padding: var(--spacing-2xl);
+}
+
+.modal-header,
+.modal-footer {
+    padding: var(--spacing-xl) var(--spacing-2xl);
 }
