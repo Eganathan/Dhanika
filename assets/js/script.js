@@ -31,7 +31,11 @@ class BudgetTracker {
             emptyTransactionMessage: document.getElementById('empty-transaction-message'),
             snackbar: document.getElementById('snackbar'),
             searchInput: document.getElementById('transaction-search'),
-            freshStartBtn: document.getElementById('fresh-start-btn')
+            freshStartBtn: document.getElementById('fresh-start-btn'),
+            tagsInput: document.getElementById('tags'),
+            tagsSuggestions: document.getElementById('tags-suggestions'),
+            tagsChips: document.getElementById('tags-chips'),
+            clearTagsBtn: document.getElementById('clear-tags-btn')
         };
         
         this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
@@ -233,6 +237,36 @@ class BudgetTracker {
             this.elements.searchInput.addEventListener('keyup', (e) => this.handleSearchInput(e));
         } else {
             console.warn('Search input not found in DOM');
+        }
+
+        // Tags autocomplete event binding
+        if (this.elements.tagsInput) {
+            this.elements.tagsInput.addEventListener('input', (e) => this.handleTagsInput(e));
+            this.elements.tagsInput.addEventListener('focus', (e) => this.showTagChipsAndSuggestions(e));
+            this.elements.tagsInput.addEventListener('keydown', (e) => this.handleTagsKeydown(e));
+            document.addEventListener('click', (e) => this.handleDocumentClick(e));
+            
+            // Initialize chips on page load
+            this.updateTagChips();
+            this.updateClearButton();
+        }
+
+        // Clear tags button event binding
+        if (this.elements.clearTagsBtn) {
+            this.elements.clearTagsBtn.addEventListener('click', () => this.clearAllTags());
+        }
+
+        // Date input change event binding
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            dateInput.addEventListener('change', () => this.updateDateTags());
+            dateInput.addEventListener('input', () => this.updateDateTags());
+        }
+
+        // Clear date button event binding
+        const clearDateBtn = document.getElementById('clear-date-btn');
+        if (clearDateBtn) {
+            clearDateBtn.addEventListener('click', () => this.clearDateToToday());
         }
         
         this.elements.filterButtons?.forEach(button => {
@@ -584,6 +618,7 @@ class BudgetTracker {
             this.initializeCurrency();
             this.setupTypeChangeListeners();
             this.initializeChartDisplay();
+            this.initializeDateField();
             this.renderTransactions();
             this.updateChart();
             this.updateSummary();
@@ -844,6 +879,172 @@ class BudgetTracker {
         return formatted + decimalPart;
     }
 
+    initializeDateField() {
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            dateInput.value = todayString;
+            this.updateDateTags();
+        }
+    }
+
+    getRelativeDateText(dateString) {
+        if (!dateString) return null;
+        
+        const inputDate = new Date(dateString + 'T00:00:00');
+        const today = new Date();
+        const yesterday = new Date(today);
+        const tomorrow = new Date(today);
+        
+        yesterday.setDate(today.getDate() - 1);
+        tomorrow.setDate(today.getDate() + 1);
+        
+        // Reset time for accurate comparison
+        today.setHours(0, 0, 0, 0);
+        yesterday.setHours(0, 0, 0, 0);
+        tomorrow.setHours(0, 0, 0, 0);
+        inputDate.setHours(0, 0, 0, 0);
+        
+        if (inputDate.getTime() === today.getTime()) {
+            return { text: 'Today', class: 'today' };
+        } else if (inputDate.getTime() === yesterday.getTime()) {
+            return { text: 'Yesterday', class: 'yesterday' };
+        } else if (inputDate.getTime() === tomorrow.getTime()) {
+            return { text: 'Tomorrow', class: 'future' };
+        } else if (inputDate > today) {
+            const diffTime = Math.abs(inputDate - today);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 7) {
+                return { text: `+${diffDays}d`, class: 'future' };
+            }
+        } else if (inputDate < today) {
+            const diffTime = Math.abs(today - inputDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 7) {
+                return { text: `-${diffDays}d`, class: 'yesterday' };
+            }
+        }
+        
+        return null;
+    }
+
+    getTransactionDateDisplay(transactionDate) {
+        const date = new Date(transactionDate);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        
+        // Reset time for accurate comparison
+        today.setHours(0, 0, 0, 0);
+        yesterday.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        
+        if (date.getTime() === today.getTime()) {
+            return `<span class="transaction-date">
+                <span class="date-relative-tag today" style="font-size: 0.7rem;">Today</span>
+            </span>`;
+        } else if (date.getTime() === yesterday.getTime()) {
+            return `<span class="transaction-date">
+                <span class="date-relative-tag yesterday" style="font-size: 0.7rem;">Yesterday</span>
+            </span>`;
+        } else {
+            // Format as "29 Dec 2024"
+            const day = date.getDate();
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `<span class="transaction-date">${day} ${month} ${year}</span>`;
+        }
+    }
+
+    getDateOptions() {
+        const today = new Date();
+        const options = [];
+        
+        // Add quick date options
+        const dateOptions = [
+            { days: 0, label: 'Today' },
+            { days: -1, label: 'Yesterday' },
+            { days: -2, label: '2 days ago' },
+            { days: -3, label: '3 days ago' },
+            { days: -4, label: '4 days ago' },
+            { days: -5, label: '5 days ago' },
+            { days: -6, label: '6 days ago' },
+            { days: -7, label: '1 week ago' },
+        ];
+        
+        dateOptions.forEach(option => {
+            const date = new Date(today);
+            date.setDate(today.getDate() + option.days);
+            const dateString = date.toISOString().split('T')[0];
+            
+            options.push({
+                dateString,
+                label: option.label,
+                days: option.days
+            });
+        });
+        
+        return options;
+    }
+
+    updateDateTags() {
+        const dateInput = document.getElementById('date');
+        const dateTagsContainer = document.querySelector('.date-quick-tags');
+        const clearDateBtn = document.getElementById('clear-date-btn');
+        
+        if (!dateInput || !dateTagsContainer) return;
+        
+        const currentDate = dateInput.value;
+        const dateOptions = this.getDateOptions();
+        
+        dateTagsContainer.innerHTML = '';
+        
+        dateOptions.forEach(option => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = `date-tag-chip ${currentDate === option.dateString ? 'active' : ''}`;
+            chip.textContent = option.label;
+            
+            chip.addEventListener('click', (e) => {
+                e.preventDefault();
+                dateInput.value = option.dateString;
+                this.updateDateTags();
+            });
+            
+            dateTagsContainer.appendChild(chip);
+        });
+        
+        // Show/hide clear button
+        const today = new Date().toISOString().split('T')[0];
+        const showClear = currentDate !== today;
+        clearDateBtn.classList.toggle('show', showClear);
+        
+        if (dateOptions.length === 0) {
+            dateTagsContainer.classList.add('empty');
+        } else {
+            dateTagsContainer.classList.remove('empty');
+        }
+    }
+
+    clearDateToToday() {
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+            this.updateDateTags();
+            
+            // Add subtle feedback
+            dateInput.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                dateInput.style.transform = '';
+            }, 150);
+        }
+    }
+
     initializeCurrency() {
         if (this.elements.currentCurrencySpan) {
             this.elements.currentCurrencySpan.textContent = `${this.state.currentCurrencySymbol} ${this.state.currentCurrency}`;
@@ -890,7 +1091,7 @@ class BudgetTracker {
             amount: parseFloat(formData.get('amount')),
             category: formData.get('category'),
             tags: formData.get('tags')?.trim(),
-            date: new Date().toISOString()
+            date: formData.get('date') ? new Date(formData.get('date')).toISOString() : new Date().toISOString()
         };
 
         if (!this.validateTransaction(transaction)) return;
@@ -906,6 +1107,11 @@ class BudgetTracker {
         this.renderTransactions();
         this.updateChart();
         this.updateSummary();
+        
+        // Update tag chips to reflect new usage counts
+        if (this.elements.tagsChips) {
+            this.updateTagChips();
+        }
     }
 
     validateTransaction(transaction) {
@@ -1019,6 +1225,15 @@ class BudgetTracker {
         form.querySelector('#description').value = transaction.description;
         form.querySelector('#amount').value = transaction.amount;
         form.querySelector('#tags').value = transaction.tags || '';
+        
+        // Set the date from the transaction
+        const dateInput = form.querySelector('#date');
+        if (dateInput && transaction.date) {
+            const transactionDate = new Date(transaction.date);
+            const dateString = transactionDate.toISOString().split('T')[0];
+            dateInput.value = dateString;
+            this.updateDateTags();
+        }
         
         this.populateCategories(transaction.type);
         // Use requestAnimationFrame for better timing
@@ -1143,6 +1358,15 @@ class BudgetTracker {
         // Restore the previously selected transaction type
         this.elements.transactionForm.querySelector(`input[name="type"][value="${currentType}"]`).checked = true;
         this.populateCategories(currentType);
+        
+        // Set today's date as default
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+            dateInput.value = todayString;
+            this.updateDateTags();
+        }
     }
 
     renderTransactions() {
@@ -1268,7 +1492,8 @@ class BudgetTracker {
         
         const emoji = this.getCategoryEmoji(transaction.category);
         const formattedAmount = this.formatCurrency(transaction.amount);
-        const formattedDate = new Date(transaction.date).toLocaleDateString();
+        const dateDisplay = this.getTransactionDateDisplay(transaction.date);
+        
         const tags = (transaction.tags && typeof transaction.tags === 'string') ? 
             transaction.tags.split(',').map(tag => 
                 `<span class="badge bg-secondary">${tag.trim()}</span>`
@@ -1285,7 +1510,7 @@ class BudgetTracker {
                         <div class="transaction-details flex-grow-1">
                             <div class="transaction-description fw-bold">${transaction.description}</div>
                             <div class="transaction-meta text-muted small">
-                                <span class="transaction-date">${formattedDate}</span>
+                                ${dateDisplay}
                                 ${tags ? `<span class="transaction-tags ms-2">${tags}</span>` : ''}
                             </div>
                         </div>
@@ -3815,6 +4040,284 @@ Please provide clear, practical, and easy-to-follow recommendations.
             }
         };
         document.addEventListener('keydown', handleKeydown);
+    }
+
+    // Tags Autocomplete Functionality
+    getDefaultTags() {
+        return [
+            'monthly', 'weekly', 'daily', 'regular', 'urgent', 'planned',
+            'food', 'grocery', 'restaurant', 'delivery', 'snacks',
+            'transport', 'metro', 'bus', 'taxi', 'fuel', 'parking',
+            'entertainment', 'movies', 'music', 'games', 'books',
+            'health', 'medical', 'fitness', 'pharmacy', 'checkup',
+            'shopping', 'clothes', 'electronics', 'home', 'gifts',
+            'bills', 'electricity', 'water', 'internet', 'phone',
+            'education', 'course', 'books', 'supplies',
+            'work', 'office', 'meeting', 'travel', 'supplies',
+            'investment', 'stocks', 'mutual-funds', 'savings', 'dividend',
+            'salary', 'bonus', 'freelance', 'project', 'commission',
+            'friends', 'family', 'personal', 'emergency'
+        ];
+    }
+
+    getUserTags() {
+        const usedTags = new Map();
+        this.state.transactions.forEach(transaction => {
+            if (transaction.tags) {
+                const tags = transaction.tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
+                tags.forEach(tag => {
+                    usedTags.set(tag, (usedTags.get(tag) || 0) + 1);
+                });
+            }
+        });
+        return usedTags;
+    }
+
+    getAllTagSuggestions(currentInput = '') {
+        const userTags = this.getUserTags();
+        const defaultTags = this.getDefaultTags();
+        const suggestions = [];
+
+        // Add user tags (previously used)
+        [...userTags.entries()].forEach(([tag, count]) => {
+            if (tag.includes(currentInput.toLowerCase())) {
+                suggestions.push({
+                    name: tag,
+                    count: count,
+                    type: 'used'
+                });
+            }
+        });
+
+        // Add default tags
+        defaultTags.forEach(tag => {
+            if (tag.includes(currentInput.toLowerCase()) && !userTags.has(tag)) {
+                suggestions.push({
+                    name: tag,
+                    count: 0,
+                    type: 'default'
+                });
+            }
+        });
+
+        // Sort: user tags by usage count, then default tags alphabetically
+        return suggestions.sort((a, b) => {
+            if (a.type === 'used' && b.type === 'default') return -1;
+            if (a.type === 'default' && b.type === 'used') return 1;
+            if (a.type === 'used' && b.type === 'used') return b.count - a.count;
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    getCurrentTags() {
+        const input = this.elements.tagsInput.value;
+        const lastCommaIndex = input.lastIndexOf(',');
+        
+        if (lastCommaIndex === -1) {
+            return { existingTags: '', currentTag: input.trim() };
+        }
+        
+        const existingTags = input.substring(0, lastCommaIndex + 1);
+        const currentTag = input.substring(lastCommaIndex + 1).trim();
+        
+        return { existingTags, currentTag };
+    }
+
+    updateTagChips() {
+        const { existingTags } = this.getCurrentTags();
+        const existingTagsList = existingTags ? 
+            existingTags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag) : [];
+        
+        const suggestions = this.getAllTagSuggestions('').filter(suggestion => 
+            !existingTagsList.includes(suggestion.name.toLowerCase())
+        );
+        const chipsContainer = this.elements.tagsChips;
+
+        chipsContainer.innerHTML = '';
+
+        if (suggestions.length === 0) {
+            chipsContainer.classList.add('empty');
+            return;
+        }
+
+        chipsContainer.classList.remove('empty');
+        
+        // Show more tags for horizontal scrolling - up to 30 tags
+        suggestions.slice(0, 30).forEach(suggestion => {
+            const chip = this.createTagChip(suggestion);
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    createTagChip(suggestion) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `tag-chip ${suggestion.type}-tag`;
+        
+        if (suggestion.type === 'used') {
+            chip.innerHTML = `${suggestion.name} <span class="usage-count">${suggestion.count}</span>`;
+        } else {
+            chip.innerHTML = suggestion.name;
+        }
+        
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.selectTag(suggestion.name);
+        });
+        
+        return chip;
+    }
+
+    handleTagsInput(e) {
+        const { currentTag } = this.getCurrentTags();
+        
+        this.updateClearButton();
+        
+        if (currentTag.length === 0) {
+            this.updateTagChips();
+            this.hideTagSuggestions();
+            return;
+        }
+
+        this.showTagSuggestions();
+    }
+
+    showTagChipsAndSuggestions() {
+        this.updateTagChips();
+        this.showTagSuggestions();
+    }
+
+    showTagSuggestions() {
+        const { currentTag, existingTags } = this.getCurrentTags();
+        
+        if (currentTag.length === 0) {
+            this.hideTagSuggestions();
+            return;
+        }
+        
+        // Filter out already selected tags
+        const existingTagsList = existingTags ? 
+            existingTags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag) : [];
+        
+        const suggestions = this.getAllTagSuggestions(currentTag).filter(suggestion => 
+            !existingTagsList.includes(suggestion.name.toLowerCase())
+        );
+        const suggestionsContainer = this.elements.tagsSuggestions;
+
+        if (suggestions.length === 0) {
+            this.hideTagSuggestions();
+            return;
+        }
+
+        suggestionsContainer.innerHTML = '';
+        
+        suggestions.slice(0, 6).forEach((suggestion, index) => {
+            const div = document.createElement('div');
+            div.className = `tag-suggestion ${suggestion.type}-tag`;
+            div.innerHTML = `
+                <span class="tag-name">${suggestion.name}</span>
+                <span class="tag-usage">${suggestion.count > 0 ? `used ${suggestion.count}x` : 'suggested'}</span>
+            `;
+            
+            div.addEventListener('click', () => this.selectTag(suggestion.name));
+            suggestionsContainer.appendChild(div);
+        });
+
+        suggestionsContainer.classList.add('show');
+        this.selectedSuggestionIndex = -1;
+    }
+
+    hideTagSuggestions() {
+        this.elements.tagsSuggestions.classList.remove('show');
+        this.selectedSuggestionIndex = -1;
+    }
+
+    selectTag(tagName) {
+        const { existingTags, currentTag } = this.getCurrentTags();
+        
+        // Check if tag already exists (case insensitive)
+        const existingTagsList = existingTags ? 
+            existingTags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag) : [];
+        
+        if (existingTagsList.includes(tagName.toLowerCase())) {
+            // Tag already exists, just clear current input and refocus
+            this.elements.tagsInput.focus();
+            this.hideTagSuggestions();
+            return;
+        }
+        
+        const newValue = existingTags + (existingTags ? ' ' : '') + tagName + ', ';
+        this.elements.tagsInput.value = newValue;
+        this.elements.tagsInput.focus();
+        this.hideTagSuggestions();
+        this.updateTagChips(); // Refresh chips to show remaining suggestions
+        this.updateClearButton(); // Show clear button when tags are added
+    }
+
+    handleTagsKeydown(e) {
+        const suggestions = this.elements.tagsSuggestions.querySelectorAll('.tag-suggestion');
+        
+        if (suggestions.length === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                this.selectedSuggestionIndex = Math.min(this.selectedSuggestionIndex + 1, suggestions.length - 1);
+                this.highlightSuggestion();
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                this.selectedSuggestionIndex = Math.max(this.selectedSuggestionIndex - 1, -1);
+                this.highlightSuggestion();
+                break;
+                
+            case 'Enter':
+                if (this.selectedSuggestionIndex >= 0) {
+                    e.preventDefault();
+                    const selectedSuggestion = suggestions[this.selectedSuggestionIndex];
+                    const tagName = selectedSuggestion.querySelector('.tag-name').textContent;
+                    this.selectTag(tagName);
+                }
+                break;
+                
+            case 'Escape':
+                this.hideTagSuggestions();
+                break;
+        }
+    }
+
+    highlightSuggestion() {
+        const suggestions = this.elements.tagsSuggestions.querySelectorAll('.tag-suggestion');
+        
+        suggestions.forEach((suggestion, index) => {
+            suggestion.classList.toggle('highlighted', index === this.selectedSuggestionIndex);
+        });
+    }
+
+    handleDocumentClick(e) {
+        if (!this.elements.tagsInput.contains(e.target) && !this.elements.tagsSuggestions.contains(e.target)) {
+            this.hideTagSuggestions();
+        }
+    }
+
+    updateClearButton() {
+        const hasContent = this.elements.tagsInput.value.trim().length > 0;
+        this.elements.clearTagsBtn.classList.toggle('show', hasContent);
+    }
+
+    clearAllTags() {
+        this.elements.tagsInput.value = '';
+        this.elements.tagsInput.focus();
+        this.updateTagChips();
+        this.updateClearButton();
+        this.hideTagSuggestions();
+        
+        // Optional: Show a subtle feedback
+        this.elements.tagsInput.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+            this.elements.tagsInput.style.transform = '';
+        }, 150);
     }
 }
 

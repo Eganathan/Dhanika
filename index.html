@@ -17,29 +17,27 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
     
-    <!-- Google Analytics - Only loaded after consent -->
-    <script>
-      // Check if user has given analytics consent
-      if (localStorage.getItem('analyticsConsent') === 'accepted') {
-        loadGoogleAnalytics();
-      }
-
-      function loadGoogleAnalytics() {
-        // Load gtag script
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-KSV981YZF6';
-        document.head.appendChild(script);
-
-        // Initialize gtag
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-KSV981YZF6');
-      }
-    </script>
 </head>
 <body>
+    <!-- Neon Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="neon-logo">
+                <h1 class="neon-text">Dhanika</h1>
+                <div class="neon-subtitle">Personal Budget Planner</div>
+            </div>
+            <div class="loading-spinner">
+                <div class="neon-ring"></div>
+                <div class="neon-ring-inner"></div>
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+    
     <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
     <header class="bg-dark text-white" role="banner">
         <div class="container">
@@ -88,9 +86,6 @@
                         </div>
                         <button class="btn btn-outline-info" id="tooltip-toggle" title="Toggle helpful tooltips on/off" aria-label="Toggle helpful tooltips">
                             <i class="bi bi-question-circle" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary" id="analytics-toggle" title="Toggle Google Analytics tracking" aria-label="Toggle analytics tracking">
-                            <i class="bi bi-graph-up" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -142,13 +137,6 @@
                 <button class="btn" id="mobile-tooltip-btn">
                     <i class="bi bi-question-circle" aria-hidden="true"></i>
                     Toggle Tooltips
-                </button>
-            </div>
-            
-            <div class="mobile-menu-item">
-                <button class="btn" id="mobile-analytics-btn">
-                    <i class="bi bi-graph-up" aria-hidden="true"></i>
-                    Analytics Settings
                 </button>
             </div>
         </div>
@@ -262,14 +250,25 @@
                                 <div id="expense-help" class="visually-hidden">Select this for money going out</div>
                             </fieldset>
                             <div class="mb-3">
+                                <label for="amount" class="form-label visually-hidden">Amount</label>
+                                <input type="number" class="form-control" id="amount" name="amount" placeholder="Amount (e.g., 1500.75)" required step="0.01" min="0.01" aria-describedby="amount-help">
+                                <div id="amount-help" class="visually-hidden">Enter the transaction amount in your selected currency</div>
+                            </div>
+                            <div class="mb-3">
                                 <label for="description" class="form-label visually-hidden">Transaction Description</label>
                                 <input type="text" class="form-control" id="description" name="description" placeholder="Description" required aria-describedby="description-help">
                                 <div id="description-help" class="visually-hidden">Enter a brief description of the transaction</div>
                             </div>
                             <div class="mb-3">
-                                <label for="amount" class="form-label visually-hidden">Amount</label>
-                                <input type="number" class="form-control" id="amount" name="amount" placeholder="Amount (e.g., 1500.75)" required step="0.01" min="0.01" aria-describedby="amount-help">
-                                <div id="amount-help" class="visually-hidden">Enter the transaction amount in your selected currency</div>
+                                <label for="date" class="form-label visually-hidden">Transaction Date</label>
+                                <div class="date-tags-header">
+                                    <div class="date-quick-tags"></div>
+                                    <button type="button" id="clear-date-btn" class="clear-date-btn" title="Reset to today">
+                                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <input type="date" class="form-control" id="date" name="date" required aria-describedby="date-help">
+                                <div id="date-help" class="visually-hidden">Select the date when this transaction occurred</div>
                             </div>
                             <div class="mb-3">
                                 <label for="category" class="form-label visually-hidden">Category</label>
@@ -280,7 +279,16 @@
                             </div>
                             <div class="mb-3">
                                 <label for="tags" class="form-label visually-hidden">Tags (Optional)</label>
-                                <input type="text" class="form-control" id="tags" name="tags" placeholder="Tags (optional)" aria-describedby="tags-help">
+                                <div class="tags-header">
+                                    <div id="tags-chips" class="tags-chips"></div>
+                                    <button type="button" id="clear-tags-btn" class="clear-tags-btn" title="Clear all tags">
+                                        <i class="bi bi-x-circle" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                                <div class="tags-input-container">
+                                    <input type="text" class="form-control" id="tags" name="tags" placeholder="Tags (optional)" aria-describedby="tags-help" autocomplete="off">
+                                    <div id="tags-suggestions" class="tags-suggestions"></div>
+                                </div>
                                 <div id="tags-help" class="visually-hidden">Add optional tags separated by commas for better organization</div>
                             </div>
                             <div class="d-grid gap-2">
@@ -366,7 +374,7 @@
         <!-- Divider -->
         <hr class="section-divider">
         <!-- Bottom Section: Transactions Full Width -->
-        <div class="row">
+        <div class="row" style="margin-top: 0;">
             <section class="col-12" aria-labelledby="transactions-heading">
                 <div class="card transactions-card">
                     <div class="card-body">
@@ -540,7 +548,6 @@
             <div class="mb-3">
                 <small class="text-muted d-block lh-base">
                     <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-                    Google Analytics is only used if you consent to it.<br>
                     Your financial data remains private and is stored locally on your device.
                 </small>
             </div>
@@ -550,45 +557,6 @@
         </div>
     </footer>
 
-    <!-- Analytics Consent Modal -->
-    <div class="modal fade" id="analyticsConsentModal" tabindex="-1" aria-labelledby="analyticsConsentModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title" id="analyticsConsentModalLabel">
-                        <i class="bi bi-shield-check text-primary me-2"></i>
-                        Privacy & Analytics
-                    </h5>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-3">
-                        We'd like to use Google Analytics to improve this app by understanding how visitors use it.
-                    </p>
-                    <div class="alert alert-info" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <small>
-                            <strong>We collect:</strong> Page views and general usage patterns<br>
-                            <strong>We don't collect:</strong> Your financial data (stays on your device)
-                        </small>
-                    </div>
-                    <p class="mb-0">
-                        <small class="text-muted">
-                            <i class="bi bi-check-circle me-1"></i>
-                            Either choice is fine - you can use the app normally without analytics.
-                        </small>
-                    </p>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-outline-secondary" id="declineAnalytics">
-                        <i class="bi bi-x-circle me-1"></i>No Thanks
-                    </button>
-                    <button type="button" class="btn btn-primary" id="acceptAnalytics">
-                        <i class="bi bi-check-circle me-1"></i>Accept Analytics
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Snackbar for notifications -->
     <div id="snackbar" class="snackbar" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -600,113 +568,65 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Analytics Consent Handler -->
+    <!-- Loading Screen Handler -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if user has already made a choice about analytics
-            const analyticsConsent = localStorage.getItem('analyticsConsent');
+        // Hide loading screen when page is fully loaded
+        window.addEventListener('load', function() {
+            const loadingScreen = document.getElementById('loading-screen');
             
-            if (!analyticsConsent) {
-                // Show consent modal if no choice has been made
-                const consentModal = new bootstrap.Modal(document.getElementById('analyticsConsentModal'));
-                consentModal.show();
-            }
-
-            // Handle accept button
-            document.getElementById('acceptAnalytics').addEventListener('click', function() {
-                localStorage.setItem('analyticsConsent', 'accepted');
-                loadGoogleAnalytics();
-                bootstrap.Modal.getInstance(document.getElementById('analyticsConsentModal')).hide();
+            // Add a minimum display time for better UX
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
                 
-                // Show confirmation snackbar
+                // Remove from DOM after animation completes
                 setTimeout(() => {
-                    showSnackbar('Analytics enabled. Thank you for helping us improve!', 'success');
-                }, 500);
-            });
-
-            // Handle decline button
-            document.getElementById('declineAnalytics').addEventListener('click', function() {
-                localStorage.setItem('analyticsConsent', 'declined');
-                bootstrap.Modal.getInstance(document.getElementById('analyticsConsentModal')).hide();
-                
-                // Show confirmation snackbar
-                setTimeout(() => {
-                    showSnackbar('Analytics disabled. Your privacy choice has been saved.', 'info');
-                }, 500);
-            });
+                    loadingScreen.style.display = 'none';
+                }, 800);
+            }, 2000); // Minimum 2 seconds display time
         });
-
-        // Snackbar function
-        function showSnackbar(message, type = 'info') {
-            const snackbar = document.getElementById('snackbar');
-            snackbar.textContent = message;
-            snackbar.className = `snackbar ${type} show`;
-            
-            setTimeout(() => {
-                snackbar.className = snackbar.className.replace('show', '');
-            }, 3000);
-        }
-
-        // Analytics toggle functionality
-        function updateAnalyticsButtonState() {
-            const analyticsConsent = localStorage.getItem('analyticsConsent');
-            const desktopBtn = document.getElementById('analytics-toggle');
-            const mobileBtn = document.getElementById('mobile-analytics-btn');
-            
-            if (!desktopBtn || !mobileBtn) return;
-            
-            if (analyticsConsent === 'accepted') {
-                // Active state - analytics enabled
-                desktopBtn.classList.remove('btn-outline-secondary');
-                desktopBtn.classList.add('btn-success');
-                desktopBtn.setAttribute('title', 'Analytics enabled - Click to disable');
-                desktopBtn.innerHTML = '<i class="bi bi-graph-up-arrow" aria-hidden="true"></i>';
-                mobileBtn.innerHTML = '<i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Analytics: ON';
-            } else {
-                // Inactive state - analytics disabled
-                desktopBtn.classList.remove('btn-success');
-                desktopBtn.classList.add('btn-outline-secondary');
-                desktopBtn.setAttribute('title', 'Analytics disabled - Click to enable');
-                desktopBtn.innerHTML = '<i class="bi bi-graph-down" aria-hidden="true"></i>';
-                mobileBtn.innerHTML = '<i class="bi bi-graph-down" aria-hidden="true"></i> Analytics: OFF';
+        
+        // Fallback to hide loading screen after maximum time
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 800);
             }
-        }
-
-        function toggleAnalytics() {
-            const currentConsent = localStorage.getItem('analyticsConsent');
-            
-            if (currentConsent === 'accepted') {
-                // Disable analytics
-                localStorage.setItem('analyticsConsent', 'declined');
-                showSnackbar('Analytics disabled. No tracking data will be collected.', 'info');
-                
-                // Optionally reload page to stop analytics completely
-                if (window.gtag) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                }
-            } else {
-                // Enable analytics
-                localStorage.setItem('analyticsConsent', 'accepted');
-                loadGoogleAnalytics();
-                showSnackbar('Analytics enabled. Thank you for helping us improve!', 'success');
-            }
-            
-            updateAnalyticsButtonState();
-        }
-
-        // Initialize button state on page load
+        }, 5000); // Maximum 5 seconds
+        
+        // Hide loading screen when DOM content is loaded (faster fallback)
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                updateAnalyticsButtonState();
-            }, 100);
+            // Start checking if all critical resources are loaded
+            let resourcesChecked = 0;
+            const totalResources = 3; // CSS, JS, fonts
             
-            // Desktop analytics toggle button
-            document.getElementById('analytics-toggle').addEventListener('click', toggleAnalytics);
+            function checkResourceLoaded() {
+                resourcesChecked++;
+                if (resourcesChecked >= totalResources) {
+                    setTimeout(() => {
+                        const loadingScreen = document.getElementById('loading-screen');
+                        if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+                            loadingScreen.classList.add('hidden');
+                            setTimeout(() => {
+                                loadingScreen.style.display = 'none';
+                            }, 800);
+                        }
+                    }, 2000);
+                }
+            }
             
-            // Mobile analytics toggle button
-            document.getElementById('mobile-analytics-btn').addEventListener('click', toggleAnalytics);
+            // Check if fonts are loaded
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(checkResourceLoaded);
+            } else {
+                checkResourceLoaded();
+            }
+            
+            // CSS and JS are checked via load event above
+            checkResourceLoaded();
+            checkResourceLoaded();
         });
     </script>
     
