@@ -1487,9 +1487,6 @@ class BudgetTracker {
     }
 
     createTransactionElement(transaction) {
-        // Debug transaction ID
-        console.log('Creating element for transaction:', transaction.id, 'Type:', typeof transaction.id);
-        
         const emoji = this.getCategoryEmoji(transaction.category);
         const formattedAmount = this.formatCurrency(transaction.amount);
         const dateDisplay = this.getTransactionDateDisplay(transaction.date);
@@ -1499,36 +1496,31 @@ class BudgetTracker {
                 `<span class="badge bg-secondary">${tag.trim()}</span>`
             ).join(' ') : '';
 
-        // Ensure ID is properly escaped for HTML attributes
         const safeId = String(transaction.id).replace(/['"]/g, '');
 
         return `
-            <li class="list-group-item ${transaction.type}-item" data-transaction-id="${safeId}">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="transaction-left d-flex align-items-center flex-grow-1">
-                        <span class="transaction-emoji me-2">${emoji}</span>
-                        <div class="transaction-details flex-grow-1">
-                            <div class="transaction-description fw-bold">${transaction.description}</div>
-                            <div class="transaction-meta text-muted small">
-                                ${dateDisplay}
-                                ${tags ? `<span class="transaction-tags ms-2">${tags}</span>` : ''}
-                            </div>
+            <li class="list-group-item transaction-item" data-transaction-id="${safeId}">
+                <div class="transaction-item-grid">
+                    <div class="transaction-icon">
+                        <span class="transaction-emoji">${emoji}</span>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">${transaction.description}</div>
+                        <div class="transaction-meta">
+                            <span>${dateDisplay}</span>
+                            ${tags ? `<span>${tags}</span>` : ''}
                         </div>
                     </div>
-                    <div class="transaction-right d-flex align-items-center gap-2">
-                        <span class="amount ${transaction.type} fw-bold">
-                            ${transaction.type === 'expense' ? '-' : '+'}${formattedAmount}
-                        </span>
-                        <div class="transaction-actions">
-                            <button class="btn btn-sm btn-outline-primary edit-btn" 
-                                    data-action="edit" data-id="${safeId}" title="Edit transaction">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-btn" 
-                                    data-action="delete" data-id="${safeId}" title="Delete transaction">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                    <div class="transaction-amount">
+                        <span class="amount ${transaction.type}">${transaction.type === 'expense' ? '−' : '+'} ${formattedAmount}</span>
+                    </div>
+                    <div class="transaction-actions">
+                        <button class="btn btn-sm btn-outline-primary edit-btn" data-action="edit" data-id="${safeId}" title="Edit transaction">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-btn" data-action="delete" data-id="${safeId}" title="Delete transaction">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </div>
             </li>

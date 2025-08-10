@@ -1072,7 +1072,7 @@ body.loading::after {
 
 @media (max-width: 576px) {
     .transaction-description {
-        max-width: 150px;
+        max-width: calc(100% - 40px);
     }
     
     .transaction-meta {
