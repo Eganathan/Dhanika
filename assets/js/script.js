@@ -1,6 +1,7 @@
 class BudgetTracker {
     constructor() {
         console.log('Initializing BudgetTracker...');
+        this.setupContinuousAnimation();
         this.detectPage();
         this.initializeElements();
         this.initializeState();
@@ -8,6 +9,49 @@ class BudgetTracker {
         this.setupStorageListener();
         this.initializeMobileMenu();
         this.initialize();
+    }
+
+    setupContinuousAnimation() {
+        try {
+            // Get or create animation start time for continuous flow across pages
+            const animationKey = 'dhanika-animation-start';
+            let animationStartTime = localStorage.getItem(animationKey);
+            
+            if (!animationStartTime) {
+                animationStartTime = Date.now();
+                localStorage.setItem(animationKey, animationStartTime);
+            } else {
+                animationStartTime = parseInt(animationStartTime);
+            }
+            
+            // Calculate elapsed time and animation delay
+            const elapsed = Date.now() - animationStartTime;
+            const animationDuration = 20000; // 20 seconds in milliseconds
+            const currentPhase = elapsed % animationDuration;
+            const delay = -currentPhase; // Negative delay to start from current position
+            
+            // Apply the calculated delay to maintain continuous animation
+            requestAnimationFrame(() => {
+                const animatedBrand = document.querySelector('.animated-brand');
+                const animatedGlow = document.querySelector('.animated-brand::after');
+                
+                if (animatedBrand) {
+                    animatedBrand.style.animationDelay = `${delay}ms`;
+                }
+                
+                // Apply to pseudo-element through CSS custom property
+                document.documentElement.style.setProperty('--animation-delay', `${delay}ms`);
+            });
+            
+            console.log('Continuous animation setup:', {
+                startTime: new Date(animationStartTime).toLocaleTimeString(),
+                elapsed: elapsed,
+                currentPhase: currentPhase,
+                delay: delay
+            });
+        } catch (error) {
+            console.error('Error setting up continuous animation:', error);
+        }
     }
 
     detectPage() {
@@ -1770,6 +1814,18 @@ class BudgetTracker {
             
             return typeMatch && categoryMatch && searchMatch;
         });
+        
+        // For dashboard (not transactions page): Sort by amount (highest first) and limit to top 10
+        if (!this.isTransactionsPage) {
+            const sortedByAmount = filtered.sort((a, b) => b.amount - a.amount);
+            const top10 = sortedByAmount.slice(0, 10);
+            
+            if (this.state.currentSearchTerm) {
+                console.log(`Filtered ${filtered.length} transactions, showing top 10 by amount`);
+            }
+            
+            return top10;
+        }
         
         if (this.state.currentSearchTerm) {
             console.log(`Filtered ${filtered.length} transactions from ${this.state.transactions.length} total`);
