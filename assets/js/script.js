@@ -35,7 +35,13 @@ class BudgetTracker {
             tagsInput: document.getElementById('tags'),
             tagsSuggestions: document.getElementById('tags-suggestions'),
             tagsChips: document.getElementById('tags-chips'),
-            clearTagsBtn: document.getElementById('clear-tags-btn')
+            clearTagsBtn: document.getElementById('clear-tags-btn'),
+            monthlyTransactionList: document.getElementById('monthly-transaction-list'),
+            monthlyFilterButtons: document.querySelectorAll('input[name="monthly-filter"]'),
+            monthlySearchInput: document.getElementById('monthly-transaction-search'),
+            emptyMonthlyMessage: document.getElementById('empty-monthly-message'),
+            monthlyCategoryFilters: document.getElementById('monthly-category-filters'),
+            monthlyTransactionListSkeleton: document.getElementById('monthly-transaction-list-skeleton')
         };
         
         this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
@@ -76,6 +82,9 @@ class BudgetTracker {
             currentFilter: 'all',
             currentCategoryFilter: 'all',
             currentSearchTerm: '',
+            currentMonthlyFilter: 'all',
+            currentMonthlyCategoryFilter: 'all',
+            currentMonthlySearchTerm: '',
             currentChartType: 'overview',
             currentCategorySubtype: 'expense',
             tooltipConfig: {},
@@ -272,6 +281,17 @@ class BudgetTracker {
         this.elements.filterButtons?.forEach(button => {
             button.addEventListener('change', (e) => this.filterTransactions(e.target.value));
         });
+        
+        // Monthly filter event binding
+        this.elements.monthlyFilterButtons?.forEach(button => {
+            button.addEventListener('change', (e) => this.filterMonthlyTransactions(e.target.value));
+        });
+        
+        // Monthly search input event binding
+        if (this.elements.monthlySearchInput) {
+            this.elements.monthlySearchInput.addEventListener('input', (e) => this.handleMonthlySearchInput(e));
+            this.elements.monthlySearchInput.addEventListener('keyup', (e) => this.handleMonthlySearchInput(e));
+        }
         
         this.elements.chartTypeButtons?.forEach(button => {
             button.addEventListener('change', (e) => this.changeChartType(e.target.value));
@@ -562,6 +582,7 @@ class BudgetTracker {
         // Refresh displays
         this.updateSummary();
         this.renderTransactions();
+        this.renderMonthlyTransactions();
         
         this.showSnackbar(`Currency changed to ${currency}`, 'success');
     }
@@ -620,11 +641,13 @@ class BudgetTracker {
             this.initializeChartDisplay();
             this.initializeDateField();
             this.renderTransactions();
+            this.renderMonthlyTransactions();
             this.updateChart();
             this.updateSummary();
             this.setupTooltips();
             this.updateTooltipButtonState();
             this.setupCategoryFilters();
+            this.setupMonthlyCategoryFilters();
             this.setupKeyboardShortcuts();
             this.initializeHelpSection();
             console.log('BudgetTracker initialized successfully');
@@ -642,17 +665,23 @@ class BudgetTracker {
         const overviewSkeleton = document.getElementById('budget-overview-skeleton');
         const transactionContent = document.getElementById('transaction-list');
         const transactionSkeleton = document.getElementById('transaction-list-skeleton');
+        const monthlyTransactionContent = document.getElementById('monthly-transaction-list');
+        const monthlyTransactionSkeleton = document.getElementById('monthly-transaction-list-skeleton');
 
         if (show) {
             overviewContent.style.display = 'none';
             overviewSkeleton.style.display = 'block';
             transactionContent.style.display = 'none';
             transactionSkeleton.style.display = 'block';
+            monthlyTransactionContent.style.display = 'none';
+            monthlyTransactionSkeleton.style.display = 'block';
         } else {
             overviewContent.style.display = 'block';
             overviewSkeleton.style.display = 'none';
             transactionContent.style.display = 'block';
             transactionSkeleton.style.display = 'none';
+            monthlyTransactionContent.style.display = 'block';
+            monthlyTransactionSkeleton.style.display = 'none';
         }
     }
 
@@ -1077,6 +1106,7 @@ class BudgetTracker {
         
         this.initializeCurrency();
         this.renderTransactions();
+        this.renderMonthlyTransactions();
         this.showSnackbar(`Currency changed to ${currency}`, 'success', true);
     }
 
@@ -1105,6 +1135,7 @@ class BudgetTracker {
         this.resetForm();
         this.saveTransactions();
         this.renderTransactions();
+        this.renderMonthlyTransactions();
         this.updateChart();
         this.updateSummary();
         
@@ -1136,6 +1167,7 @@ class BudgetTracker {
             this.state.transactions.push(transaction);
             console.log('Total transactions:', this.state.transactions.length);
             this.setupCategoryFilters(); // Refresh category filters
+            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
             this.showSnackbar('Transaction added successfully', 'success', true);
         } catch (error) {
             console.error('Error adding transaction:', error);
@@ -1149,6 +1181,7 @@ class BudgetTracker {
             if (index !== -1) {
                 this.state.transactions[index] = transaction;
                 this.setupCategoryFilters(); // Refresh category filters
+            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
                 this.showSnackbar('Transaction updated successfully', 'success', true);
             } else {
                 throw new Error('Transaction not found');
@@ -1185,8 +1218,10 @@ class BudgetTracker {
             }
             
             this.saveTransactions();
-            this.setupCategoryFilters(); // Refresh category filters BEFORE rendering
+            this.setupCategoryFilters(); // Refresh category filters
+            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters BEFORE rendering
             this.renderTransactions();
+            this.renderMonthlyTransactions();
             this.updateChart();
             this.updateSummary();
             this.showSnackbar('Transaction deleted successfully', 'success', true);
@@ -1203,9 +1238,11 @@ class BudgetTracker {
             this.state.transactions = [];
             this.saveTransactions();
             this.renderTransactions();
+            this.renderMonthlyTransactions();
             this.updateChart();
             this.updateSummary();
             this.setupCategoryFilters();
+            this.setupMonthlyCategoryFilters();
             this.showSnackbar('All transactions cleared. Ready for fresh start!', 'success', true);
             console.log('All transactions cleared successfully');
         } catch (error) {
@@ -1574,6 +1611,7 @@ class BudgetTracker {
         this.searchTimeout = setTimeout(() => {
             console.log('Executing search for:', searchTerm);
             this.renderTransactions();
+            this.renderMonthlyTransactions();
             
             if (searchTerm) {
                 const count = this.getFilteredTransactions().length;
@@ -1587,6 +1625,7 @@ class BudgetTracker {
         console.log('Filtering transactions by:', filter);
         this.state.currentFilter = filter;
         this.renderTransactions();
+        this.renderMonthlyTransactions();
         this.updateFilterUI();
         
         // Show filter feedback
@@ -1596,6 +1635,246 @@ class BudgetTracker {
             'expense': 'Expenses Only'
         };
         this.showSnackbar(`Showing: ${filterLabels[filter]}`, 'info');
+    }
+
+    // Monthly Transactions Methods
+    renderMonthlyTransactions() {
+        try {
+            console.log('Rendering monthly transactions...');
+            if (!this.elements.monthlyTransactionList) {
+                console.error('Monthly transaction list element not found');
+                return;
+            }
+            
+            const monthlyTransactions = this.getMonthlyFilteredTransactions();
+            console.log('Monthly filtered transactions:', monthlyTransactions.length);
+            
+            if (monthlyTransactions.length === 0) {
+                this.showEmptyMonthlyTransactionState();
+                return;
+            }
+
+            this.elements.emptyMonthlyMessage.style.display = 'none';
+            const transactionElements = monthlyTransactions
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(transaction => {
+                    try {
+                        return this.createTransactionElement(transaction);
+                    } catch (error) {
+                        console.error('Error creating monthly transaction element:', error, transaction);
+                        return this.createErrorTransactionElement(transaction.id);
+                    }
+                });
+            
+            this.elements.monthlyTransactionList.innerHTML = transactionElements.join('');
+            console.log('Rendered', transactionElements.length, 'monthly transactions');
+            
+            // Add event delegation for monthly transaction buttons
+            this.setupMonthlyTransactionEventDelegation();
+            
+        } catch (error) {
+            console.error('Error rendering monthly transactions:', error);
+            this.showSnackbar('Failed to display monthly transactions', 'error');
+        }
+    }
+
+    showEmptyMonthlyTransactionState() {
+        this.elements.monthlyTransactionList.innerHTML = '';
+        
+        const currentMonthTransactions = this.getThisMonthTransactions();
+        const isEmpty = currentMonthTransactions.length === 0;
+        const hasNoFilterResults = currentMonthTransactions.length > 0 && this.getMonthlyFilteredTransactions().length === 0;
+        
+        let emptyMessage = {
+            icon: 'bi-calendar-month',
+            title: 'No Transactions This Month',
+            subtitle: 'Your monthly transactions will appear here.'
+        };
+        
+        if (hasNoFilterResults) {
+            const filterType = this.state.currentMonthlyFilter;
+            
+            emptyMessage = {
+                icon: 'bi-funnel',
+                title: 'No Matching Monthly Transactions',
+                subtitle: `No monthly transactions found for current filters.${filterType !== 'all' ? ` Try changing the type filter.` : ''}`
+            };
+        } else if (isEmpty) {
+            emptyMessage = {
+                icon: 'bi-calendar-plus',
+                title: 'No Transactions This Month Yet',
+                subtitle: 'Add transactions using the form above to see them appear here for this month.'
+            };
+        }
+        
+        this.elements.emptyMonthlyMessage.innerHTML = `
+            <i class="${emptyMessage.icon}" aria-hidden="true"></i>
+            <p>${emptyMessage.title}</p>
+            <small class="text-muted">${emptyMessage.subtitle}</small>
+        `;
+        this.elements.emptyMonthlyMessage.style.display = 'block';
+    }
+
+    getThisMonthTransactions() {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        return this.state.transactions.filter(transaction => {
+            const transactionDate = new Date(transaction.date);
+            return transactionDate.getMonth() === currentMonth && 
+                   transactionDate.getFullYear() === currentYear;
+        });
+    }
+
+    getMonthlyFilteredTransactions() {
+        const thisMonthTransactions = this.getThisMonthTransactions();
+        
+        const filtered = thisMonthTransactions.filter(transaction => {
+            const typeMatch = this.state.currentMonthlyFilter === 'all' || transaction.type === this.state.currentMonthlyFilter;
+            const categoryMatch = this.state.currentMonthlyCategoryFilter === 'all' || transaction.category === this.state.currentMonthlyCategoryFilter;
+            
+            let searchMatch = true;
+            if (this.state.currentMonthlySearchTerm) {
+                const searchTerm = this.state.currentMonthlySearchTerm.toLowerCase();
+                const description = (transaction.description || '').toLowerCase();
+                const tags = (transaction.tags || '').toLowerCase();
+                const category = (transaction.category || '').toLowerCase();
+                
+                searchMatch = description.includes(searchTerm) || 
+                             tags.includes(searchTerm) || 
+                             category.includes(searchTerm);
+            }
+            
+            return typeMatch && categoryMatch && searchMatch;
+        });
+        
+        return filtered;
+    }
+
+    handleMonthlySearchInput(e) {
+        const searchTerm = e.target.value.trim();
+        console.log('Monthly search input:', searchTerm);
+        this.state.currentMonthlySearchTerm = searchTerm;
+        
+        // Debounce search to avoid excessive filtering
+        clearTimeout(this.monthlySearchTimeout);
+        this.monthlySearchTimeout = setTimeout(() => {
+            console.log('Executing monthly search for:', searchTerm);
+            this.renderMonthlyTransactions();
+            
+            if (searchTerm) {
+                const count = this.getMonthlyFilteredTransactions().length;
+                console.log('Monthly search results:', count);
+                this.showSnackbar(`Found ${count} monthly transaction${count !== 1 ? 's' : ''} matching "${searchTerm}"`, 'info');
+            }
+        }, 300);
+    }
+
+    filterMonthlyTransactions(filter) {
+        console.log('Filtering monthly transactions by:', filter);
+        this.state.currentMonthlyFilter = filter;
+        this.renderMonthlyTransactions();
+        
+        // Show filter feedback
+        const filterLabels = {
+            'all': 'All Monthly Transactions',
+            'income': 'Monthly Income Only',
+            'expense': 'Monthly Expenses Only'
+        };
+        this.showSnackbar(`Showing: ${filterLabels[filter]}`, 'info');
+    }
+
+    setupMonthlyTransactionEventDelegation() {
+        if (!this.elements.monthlyTransactionList) return;
+        
+        // Remove existing listeners to prevent duplicates
+        this.elements.monthlyTransactionList.removeEventListener('click', this.monthlyTransactionListHandler);
+        
+        // Create handler function that can be properly removed
+        this.monthlyTransactionListHandler = (e) => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const transactionId = button.dataset.id;
+            
+            if (action === 'edit') {
+                this.editTransaction(transactionId);
+            } else if (action === 'delete') {
+                this.deleteTransaction(transactionId);
+            }
+        };
+        
+        this.elements.monthlyTransactionList.addEventListener('click', this.monthlyTransactionListHandler);
+    }
+
+    setupMonthlyCategoryFilters() {
+        const monthlyCategoryFiltersContainer = document.getElementById('monthly-category-filters');
+        if (!monthlyCategoryFiltersContainer) return;
+
+        // Get unique categories from monthly transactions only
+        const categories = new Set();
+        const monthlyTransactions = this.getThisMonthTransactions();
+        monthlyTransactions.forEach(transaction => {
+            if (transaction.category) {
+                categories.add(transaction.category);
+            }
+        });
+
+        // Check if current monthly category filter still exists
+        if (this.state.currentMonthlyCategoryFilter !== 'all' && !categories.has(this.state.currentMonthlyCategoryFilter)) {
+            // Current category no longer exists, reset to "all"
+            console.log(`Monthly category filter "${this.state.currentMonthlyCategoryFilter}" no longer exists, resetting to "all"`);
+            this.state.currentMonthlyCategoryFilter = 'all';
+            // Force re-render the monthly transactions list with the new filter
+            setTimeout(() => {
+                this.renderMonthlyTransactions();
+            }, 0);
+        }
+
+        // Create filter tags
+        const filterHTML = [
+            '<span class="category-filter-tag" data-category="all">All Categories</span>',
+            ...Array.from(categories).map(category => {
+                const emoji = this.getCategoryEmoji(category);
+                const label = this.getCategoryLabel(category);
+                return `<span class="category-filter-tag" data-category="${category}">${emoji} ${label}</span>`;
+            })
+        ].join('');
+
+        monthlyCategoryFiltersContainer.innerHTML = filterHTML;
+
+        // Update UI to reflect current filter
+        this.updateMonthlyCategoryFilterUI();
+
+        // Add click handlers
+        monthlyCategoryFiltersContainer.addEventListener('click', (e) => {
+            const tag = e.target.closest('.category-filter-tag');
+            if (tag) {
+                this.filterMonthlyByCategory(tag.dataset.category);
+            }
+        });
+    }
+
+    filterMonthlyByCategory(category) {
+        this.state.currentMonthlyCategoryFilter = category;
+        this.renderMonthlyTransactions();
+        this.updateMonthlyCategoryFilterUI();
+        
+        const filterLabel = category === 'all' ? 'All Categories' : this.getCategoryLabel(category);
+        this.showSnackbar(`Monthly category filter: ${filterLabel}`, 'info');
+    }
+
+    updateMonthlyCategoryFilterUI() {
+        const tags = document.querySelectorAll('#monthly-category-filters .category-filter-tag');
+        tags.forEach(tag => {
+            if (tag.dataset.category === this.state.currentMonthlyCategoryFilter) {
+                tag.classList.add('active');
+            } else {
+                tag.classList.remove('active');
+            }
+        });
     }
 
     updateFilterUI() {
@@ -1799,6 +2078,7 @@ class BudgetTracker {
                 this.state.currentCategoryFilter = 'all';
                 this.updateCategoryFilterUI();
                 this.renderTransactions();
+                this.renderMonthlyTransactions();
                 
                 // Show a brief message about the automatic switch
                 this.showSnackbar(`Switched to ${oppositeType} categories`, 'info');
@@ -2024,6 +2304,7 @@ class BudgetTracker {
                     this.saveTransactions();
                     this.initializeCurrency();
                     this.renderTransactions();
+                    this.renderMonthlyTransactions();
                     this.updateChart();
                     this.updateSummary();
                     
@@ -2229,6 +2510,7 @@ ${encryptedData}
                         this.saveTransactions();
                         this.initializeCurrency();
                         this.renderTransactions();
+                        this.renderMonthlyTransactions();
                         this.updateChart();
                         this.updateSummary();
                         
@@ -3815,6 +4097,7 @@ Please provide clear, practical, and easy-to-follow recommendations.
             // Force re-render the transactions list with the new filter
             setTimeout(() => {
                 this.renderTransactions();
+                this.renderMonthlyTransactions();
             }, 0);
         }
 
@@ -3845,6 +4128,7 @@ Please provide clear, practical, and easy-to-follow recommendations.
     filterByCategory(category) {
         this.state.currentCategoryFilter = category;
         this.renderTransactions();
+        this.renderMonthlyTransactions();
         this.updateCategoryFilterUI();
         
         const filterLabel = category === 'all' ? 'All Categories' : this.getCategoryLabel(category);
@@ -3943,6 +4227,7 @@ Please provide clear, practical, and easy-to-follow recommendations.
                     this.state.currentCategoryFilter = 'all';
                     document.getElementById('all-transactions').checked = true;
                     this.renderTransactions();
+                    this.renderMonthlyTransactions();
                     this.updateFilterUI();
                     this.updateCategoryFilterUI();
                     this.showSnackbar('Cleared all filters and search', 'info');

@@ -373,13 +373,81 @@
 
         <!-- Divider -->
         <hr class="section-divider">
-        <!-- Bottom Section: Transactions Full Width -->
+        <!-- Monthly Transactions Section -->
         <div class="row" style="margin-top: 0;">
+            <section class="col-12" aria-labelledby="monthly-transactions-heading">
+                <div class="card transactions-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="card-title mb-0" id="monthly-transactions-heading">Transactions This Month</h2>
+                            <div class="btn-group" role="radiogroup" aria-label="Filter monthly transactions">
+                                <input type="radio" class="btn-check" name="monthly-filter" id="all-monthly-transactions" value="all" checked>
+                                <label class="btn btn-outline-secondary btn-sm" for="all-monthly-transactions">All</label>
+                                <input type="radio" class="btn-check" name="monthly-filter" id="monthly-income-filter" value="income">
+                                <label class="btn btn-outline-success btn-sm" for="monthly-income-filter">Income</label>
+                                <input type="radio" class="btn-check" name="monthly-filter" id="monthly-expense-filter" value="expense">
+                                <label class="btn btn-outline-danger btn-sm" for="monthly-expense-filter">Expenses</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Search and Category Filters for Monthly -->
+                        <div class="mb-3">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <small class="text-muted mb-2 d-block">Search this month transactions:</small>
+                                    <input type="text" id="monthly-transaction-search" class="form-control form-control-sm" 
+                                           placeholder="Search by description or tags..." aria-label="Search this month transactions">
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted mb-2 d-block">Filter by category:</small>
+                                    <div id="monthly-category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Monthly category filters"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="empty-monthly-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
+                            <i class="bi bi-calendar-month" aria-hidden="true"></i>
+                            <p>No Transactions This Month</p>
+                            <small class="text-muted">Your monthly transactions will appear here.</small>
+                        </div>
+                        <ul id="monthly-transaction-list" class="list-group" role="list" aria-label="Monthly transaction list"></ul>
+                        <div id="monthly-transaction-list-skeleton">
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                            <div class="skeleton-transaction">
+                                <div class="skeleton skeleton-transaction-icon"></div>
+                                <div class="skeleton-transaction-details">
+                                    <div class="skeleton skeleton-text"></div>
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <div class="skeleton skeleton-transaction-amount"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- All Transactions Section -->
+        <div class="row mt-4">
             <section class="col-12" aria-labelledby="transactions-heading">
                 <div class="card transactions-card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2 class="card-title mb-0" id="transactions-heading">Transactions</h2>
+                            <h2 class="card-title mb-0" id="transactions-heading">All Transactions</h2>
                             <div class="btn-group" role="radiogroup" aria-label="Filter transactions">
                                 <input type="radio" class="btn-check" name="filter" id="all-transactions" value="all" checked>
                                 <label class="btn btn-outline-secondary btn-sm" for="all-transactions">All</label>
