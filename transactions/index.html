@@ -117,6 +117,57 @@
         .btn-close {
             filter: invert(1) !important;
         }
+        
+        /* Fix search component theme */
+        .input-group-text {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-muted, #94a3b8) !important;
+        }
+        
+        .input-group .form-control {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .input-group .form-control:focus {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border-color: var(--primary-color, #3b82f6) !important;
+            color: var(--text-color, #e2e8f0) !important;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+        }
+        
+        .input-group .btn {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-muted, #94a3b8) !important;
+        }
+        
+        .input-group .btn:hover {
+            background-color: var(--card-bg, #1e293b) !important;
+            border-color: var(--border-color, #334155) !important;
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .input-group .btn:focus {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border-color: var(--primary-color, #3b82f6) !important;
+            color: var(--text-color, #e2e8f0) !important;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+        }
+        
+        /* Ensure input group elements have proper border connections */
+        .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+            margin-left: -1px !important;
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+        }
+        
+        .input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
     </style>
 </head>
 <body>
