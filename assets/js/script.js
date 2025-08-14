@@ -41,7 +41,8 @@ class BudgetTracker {
             monthlySearchInput: document.getElementById('monthly-transaction-search'),
             emptyMonthlyMessage: document.getElementById('empty-monthly-message'),
             monthlyCategoryFilters: document.getElementById('monthly-category-filters'),
-            monthlyTransactionListSkeleton: document.getElementById('monthly-transaction-list-skeleton')
+            monthlyTransactionListSkeleton: document.getElementById('monthly-transaction-list-skeleton'),
+            timeFilter: document.getElementById('time-filter')
         };
         
         this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
@@ -92,7 +93,8 @@ class BudgetTracker {
             activeTooltipInstances: [],
             currentActiveTooltip: null,
             currentCurrency: selectedCurrency,
-            currentCurrencySymbol: selectedCurrencySymbol
+            currentCurrencySymbol: selectedCurrencySymbol,
+            currentTimeFilter: 'this-month'
         };
     }
 
@@ -300,6 +302,11 @@ class BudgetTracker {
         this.elements.categorySubtypeButtons?.forEach(button => {
             button.addEventListener('change', (e) => this.changeCategorySubtype(e.target.value));
         });
+
+        // Time filter dropdown event binding
+        if (this.elements.timeFilter) {
+            this.elements.timeFilter.addEventListener('change', (e) => this.handleTimeFilterChange(e.target.value));
+        }
 
         document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
             item.addEventListener('click', (e) => this.changeCurrency(e));
@@ -1917,6 +1924,27 @@ class BudgetTracker {
         this.updateChart();
     }
     
+    handleTimeFilterChange(timeFilter) {
+        this.state.currentTimeFilter = timeFilter;
+        this.updateChart();
+        this.updateSummary();
+    }
+    
+    getFilteredTransactions() {
+        if (this.state.currentTimeFilter === 'this-month') {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            return this.state.transactions.filter(transaction => {
+                const transactionDate = new Date(transaction.date);
+                return transactionDate.getMonth() === currentMonth && 
+                       transactionDate.getFullYear() === currentYear;
+            });
+        }
+        return this.state.transactions;
+    }
+    
     initializeChartDisplay() {
         // Ensure the category subtype selector is hidden on page load since overview is default
         console.log('initializeChartDisplay called');
@@ -1947,11 +1975,13 @@ class BudgetTracker {
             return;
         }
         
-        const income = this.state.transactions
+        const filteredTransactions = this.getFilteredTransactions();
+        
+        const income = filteredTransactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
             
-        const expenses = this.state.transactions
+        const expenses = filteredTransactions
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
 
@@ -2051,7 +2081,8 @@ class BudgetTracker {
         const categoryTotals = {};
         const transactionType = this.state.currentCategorySubtype || 'expense';
         
-        const filteredTransactions = this.state.transactions
+        const timeFilteredTransactions = this.getFilteredTransactions();
+        const filteredTransactions = timeFilteredTransactions
             .filter(t => t.type === transactionType);
             
         filteredTransactions.forEach(t => {
@@ -2227,11 +2258,13 @@ class BudgetTracker {
     }
 
     updateSummary() {
-        const income = this.state.transactions
+        const filteredTransactions = this.getFilteredTransactions();
+        
+        const income = filteredTransactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
             
-        const expenses = this.state.transactions
+        const expenses = filteredTransactions
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
             

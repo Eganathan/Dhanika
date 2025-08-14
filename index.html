@@ -307,6 +307,15 @@
                 <div class="card chart-container">
                     <div class="card-body">
                         <h2 class="card-title" id="budget-overview-heading">Budget Overview</h2>
+                        <div class="chart-filter mb-2">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <label for="time-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Period:</label>
+                                <select class="form-select" id="time-filter" name="time-filter" style="width: auto; min-width: 100px; font-size: 0.75rem; padding: 0.125rem 0.5rem; height: 24px;">
+                                    <option value="this-month" selected>This Month</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="chart-tabs mb-3">
                             <div class="btn-group w-100" role="radiogroup" aria-label="Select chart type">
                                 <input type="radio" class="btn-check" name="chart-type" id="overview-chart" value="overview" checked aria-describedby="overview-help">
