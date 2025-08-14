@@ -1910,7 +1910,7 @@ body.loading::after {
     
     /* Mobile menu toggle button */
     .mobile-menu-toggle {
-        display: none;
+        display: block;
         background: none;
         border: none;
         color: var(--text-color);
