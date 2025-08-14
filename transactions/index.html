@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dhanika - All Transactions Management">
+    <meta name="keywords" content="transactions, expense manager, personal finance, money management">
+    <meta name="author" content="Dhanika">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="msapplication-navbutton-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Transactions - Dhanika</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        /* Transactions page specific styles */
+        .transaction-item-grid.with-checkbox {
+            display: grid;
+            grid-template-columns: 40px 50px 1fr auto auto;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        
+        .transaction-checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .skeleton-checkbox {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        /* Responsive adjustments for mobile */
+        @media (max-width: 768px) {
+            .transaction-item-grid.with-checkbox {
+                grid-template-columns: 35px 40px 1fr auto;
+                gap: 0.5rem;
+            }
+            
+            .transaction-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .transaction-actions .btn {
+                padding: 0.25rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Bulk actions styling */
+        #bulk-actions {
+            border-left: 4px solid #0d6efd;
+        }
+        
+        /* Enhanced statistics bar */
+        .stat-item h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .stat-item small {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Dark theme for modals */
+        .modal-content {
+            background-color: var(--card-bg, #1e293b) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .modal-header {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border-bottom: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .modal-title {
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .modal-footer {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border-top: 1px solid var(--border-color, #334155) !important;
+        }
+        
+        .modal-body .form-label {
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .modal-body .form-control,
+        .modal-body .form-select {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border: 1px solid var(--border-color, #334155) !important;
+            color: var(--text-color, #e2e8f0) !important;
+        }
+        
+        .modal-body .form-control:focus,
+        .modal-body .form-select:focus {
+            background-color: var(--surface-bg, #0f172a) !important;
+            border-color: var(--primary-color, #3b82f6) !important;
+            color: var(--text-color, #e2e8f0) !important;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+        }
+        
+        .btn-close {
+            filter: invert(1) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Neon Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="neon-logo">
+                <h1 class="neon-text">Dhanika</h1>
+                <div class="neon-subtitle">Transactions</div>
+            </div>
+            <div class="loading-spinner">
+                <div class="neon-ring"></div>
+                <div class="neon-ring-inner"></div>
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+    
+    <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
+    <header class="bg-dark text-white" role="banner">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="mb-0">Dhanika</h1>
+                            <p class="text-muted">dhanika.eknath.dev</p>
+                        </div>
+                        <!-- Mobile menu toggle button (hidden by default) -->
+                        <button class="mobile-menu-toggle" aria-label="Open mobile menu">
+                            <i class="bi bi-list" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0 gap-2 header-buttons">
+                        <a href="../" class="btn btn-outline-info" aria-label="Go to dashboard">
+                            <i class="bi bi-house" aria-hidden="true"></i> Home
+                        </a>
+                        <div class="btn-group" role="group" aria-label="Data management buttons">
+                            <button class="btn btn-outline-success" id="export-btn-header" aria-label="Export your budget data as JSON file">
+                                <i class="bi bi-download" aria-hidden="true"></i> Export Data
+                            </button>
+                            <label class="btn btn-outline-warning mb-0" for="import-file-header" aria-label="Import budget data from JSON file">
+                                <i class="bi bi-upload" aria-hidden="true"></i> Import Data
+                            </label>
+                            <input type="file" id="import-file-header" accept=".json" style="display: none;" aria-label="Select JSON file to import">
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="currency-selector" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select currency">
+                                <i class="bi bi-currency-exchange me-1" aria-hidden="true"></i>
+                                <span id="current-currency">₹ INR</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="currency-selector">
+                                <li><a class="dropdown-item" href="#" data-currency="INR" data-symbol="₹">₹ Indian Rupee (INR)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="USD" data-symbol="$">$ US Dollar (USD)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="EUR" data-symbol="€">€ Euro (EUR)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="GBP" data-symbol="£">£ British Pound (GBP)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="JPY" data-symbol="¥">¥ Japanese Yen (JPY)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="SAR" data-symbol="SAR">ر.س Saudi Riyal (SAR)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="AED" data-symbol="AED">د.إ UAE Dirham (AED)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="CHF" data-symbol="CHF">Fr Swiss Franc (CHF)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="CNY" data-symbol="¥">¥ Chinese Yuan (CNY)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="CAD" data-symbol="C$">C$ Canadian Dollar (CAD)</a></li>
+                                <li><a class="dropdown-item" href="#" data-currency="AUD" data-symbol="A$">A$ Australian Dollar (AUD)</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-outline-info" id="tooltip-toggle" title="Toggle helpful tooltips on/off" aria-label="Toggle helpful tooltips">
+                            <i class="bi bi-question-circle" aria-hidden="true"></i>
+                        </button>
+                        <a href="../#transaction-form" class="btn btn-primary" aria-label="Add new transaction">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay and Panel -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+    <div class="mobile-menu-panel" id="mobile-menu-panel">
+        <div class="mobile-menu-header">
+            <h3 class="mobile-menu-title">📊 Dhanika</h3>
+            <button class="mobile-menu-close" aria-label="Close mobile menu">
+                <i class="bi bi-x" aria-hidden="true"></i>
+            </button>
+        </div>
+        
+        <div class="mobile-menu-items">
+            <div class="mobile-menu-item">
+                <a href="../" class="btn w-100 mb-2">
+                    <i class="bi bi-house" aria-hidden="true"></i>
+                    Home
+                </a>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn w-100 mb-2" id="mobile-export-btn">
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    Export Data
+                </button>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn w-100 mb-2" id="mobile-import-btn">
+                    <i class="bi bi-upload" aria-hidden="true"></i>
+                    Import Data
+                </button>
+                <input type="file" id="mobile-import-file" accept=".json" style="display: none;">
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn w-100 mb-2" id="mobile-currency-btn">
+                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>
+                    Change Currency
+                </button>
+                <div class="mobile-currency-list" style="display: none; margin-top: 10px;">
+                    <a href="#" class="dropdown-item" data-currency="INR" data-symbol="₹">₹ Indian Rupee</a>
+                    <a href="#" class="dropdown-item" data-currency="USD" data-symbol="$">$ US Dollar</a>
+                    <a href="#" class="dropdown-item" data-currency="EUR" data-symbol="€">€ Euro</a>
+                    <a href="#" class="dropdown-item" data-currency="GBP" data-symbol="£">£ British Pound</a>
+                    <a href="#" class="dropdown-item" data-currency="JPY" data-symbol="¥">¥ Japanese Yen</a>
+                </div>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <button class="btn w-100 mb-2" id="mobile-tooltip-btn">
+                    <i class="bi bi-question-circle" aria-hidden="true"></i>
+                    Toggle Tooltips
+                </button>
+            </div>
+            
+            <div class="mobile-menu-item">
+                <a href="../#transaction-form" class="btn btn-primary w-100">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    Add Transaction
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <main class="container-fluid py-4" id="main-content" role="main">
+        <!-- Transaction Statistics Bar -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 col-6 mb-3 mb-md-0">
+                                <div class="stat-item">
+                                    <h3 class="text-success mb-1" id="total-income">₹0.00</h3>
+                                    <small class="text-muted">Total Income</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-3 mb-md-0">
+                                <div class="stat-item">
+                                    <h3 class="text-danger mb-1" id="total-expenses">₹0.00</h3>
+                                    <small class="text-muted">Total Expenses</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6 mb-3 mb-md-0">
+                                <div class="stat-item">
+                                    <h3 class="mb-1" id="balance">₹0.00</h3>
+                                    <small class="text-muted">Balance</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-item">
+                                    <h3 class="text-info mb-1" id="transaction-count">0</h3>
+                                    <small class="text-muted">Transactions</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card transactions-card">
+                    <div class="card-body">
+                        <!-- Header with Title and Actions -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h2 class="card-title mb-1" id="transactions-heading">All Transactions</h2>
+                                <small class="text-muted">Manage all your income and expenses</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <!-- Time Period Filter -->
+                                <div class="d-flex align-items-center">
+                                    <label for="time-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Period:</label>
+                                    <select class="form-select form-select-sm" id="time-filter" name="time-filter" style="width: auto; min-width: 120px;">
+                                        <option value="all" selected>All Time</option>
+                                        <option value="this-month">This Month</option>
+                                        <option value="last-month">Last Month</option>
+                                        <option value="this-year">This Year</option>
+                                        <option value="last-year">Last Year</option>
+                                    </select>
+                                </div>
+                                <!-- Sort Options -->
+                                <div class="d-flex align-items-center">
+                                    <label for="sort-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Sort:</label>
+                                    <select class="form-select form-select-sm" id="sort-filter" name="sort-filter" style="width: auto; min-width: 120px;">
+                                        <option value="date-desc" selected>Date (Newest)</option>
+                                        <option value="date-asc">Date (Oldest)</option>
+                                        <option value="amount-desc">Amount (High to Low)</option>
+                                        <option value="amount-asc">Amount (Low to High)</option>
+                                        <option value="category">Category</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Controls -->
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">Transaction Type:</small>
+                                </div>
+                                <div class="btn-group w-100" role="radiogroup" aria-label="Filter transactions">
+                                    <input type="radio" class="btn-check" name="filter" id="all-transactions" value="all" checked>
+                                    <label class="btn btn-outline-secondary btn-sm" for="all-transactions">All</label>
+                                    <input type="radio" class="btn-check" name="filter" id="income-filter" value="income">
+                                    <label class="btn btn-outline-success btn-sm" for="income-filter">Income</label>
+                                    <input type="radio" class="btn-check" name="filter" id="expense-filter" value="expense">
+                                    <label class="btn btn-outline-danger btn-sm" for="expense-filter">Expenses</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <small class="text-muted mb-2 d-block">Search transactions:</small>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="transaction-search" class="form-control" 
+                                           placeholder="Search by description, category, or tags..." aria-label="Search transactions">
+                                    <button class="btn btn-outline-secondary" type="button" id="clear-search">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <small class="text-muted mb-2 d-block">Filter by category:</small>
+                                <div id="category-filters" class="d-flex flex-wrap gap-1" role="group" aria-label="Category filters">
+                                    <!-- Category filter buttons will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bulk Actions (Initially Hidden) -->
+                        <div id="bulk-actions" class="alert alert-info d-none mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong><span id="selected-count">0</span> transactions selected</strong>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-danger me-2" id="bulk-delete">
+                                        <i class="bi bi-trash"></i> Delete Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="clear-selection">
+                                        Clear Selection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction List -->
+                        <div id="empty-transaction-message" class="empty-state text-center py-5" style="display: none;" role="status" aria-live="polite">
+                            <i class="bi bi-card-list display-1 text-muted mb-3" aria-hidden="true"></i>
+                            <h4>No Transactions Found</h4>
+                            <p class="text-muted">Your transactions will appear here, or try adjusting your filters.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-transaction-modal">
+                                <i class="bi bi-plus-lg"></i> Add Your First Transaction
+                            </button>
+                        </div>
+
+                        <div class="transaction-list-container">
+                            <!-- Bulk Select All -->
+                            <div class="d-flex justify-content-between align-items-center mb-3" id="list-header" style="display: none !important;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                    <label class="form-check-label" for="select-all">
+                                        Select all visible transactions
+                                    </label>
+                                </div>
+                                <small class="text-muted" id="showing-info">Showing 0 transactions</small>
+                            </div>
+                            
+                            <ul id="transaction-list" class="list-group" role="list" aria-label="Transaction list">
+                                <!-- Transactions will be populated here -->
+                            </ul>
+                        </div>
+
+                        <!-- Pagination (if needed) -->
+                        <div id="pagination" class="d-flex justify-content-center mt-4" style="display: none !important;">
+                            <nav aria-label="Transaction pagination">
+                                <ul class="pagination pagination-sm">
+                                    <li class="page-item"><a class="page-link" href="#" id="prev-page">Previous</a></li>
+                                    <li class="page-item active"><a class="page-link" href="#" id="current-page">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#" id="next-page">Next</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+
+                        <!-- Loading Skeleton -->
+                        <div id="transaction-list-skeleton">
+                            <div class="skeleton-transaction mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="form-check me-3">
+                                        <div class="skeleton skeleton-checkbox"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
+                                    <div class="skeleton-transaction-details flex-grow-1">
+                                        <div class="skeleton skeleton-text mb-1" style="width: 60%;"></div>
+                                        <div class="skeleton skeleton-text" style="width: 40%;"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-amount"></div>
+                                </div>
+                            </div>
+                            <!-- Repeat skeleton items -->
+                            <div class="skeleton-transaction mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="form-check me-3">
+                                        <div class="skeleton skeleton-checkbox"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
+                                    <div class="skeleton-transaction-details flex-grow-1">
+                                        <div class="skeleton skeleton-text mb-1" style="width: 70%;"></div>
+                                        <div class="skeleton skeleton-text" style="width: 50%;"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-amount"></div>
+                                </div>
+                            </div>
+                            <div class="skeleton-transaction mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="form-check me-3">
+                                        <div class="skeleton skeleton-checkbox"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
+                                    <div class="skeleton-transaction-details flex-grow-1">
+                                        <div class="skeleton skeleton-text mb-1" style="width: 50%;"></div>
+                                        <div class="skeleton skeleton-text" style="width: 30%;"></div>
+                                    </div>
+                                    <div class="skeleton skeleton-transaction-amount"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+    <!-- Export/Import Modal -->
+    <div class="modal fade" id="export-import-modal" tabindex="-1" aria-labelledby="export-import-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="export-import-label">Export / Import Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Export Data</h6>
+                            <p class="text-muted small">Download your transaction data</p>
+                            <button class="btn btn-outline-primary w-100 mb-2" id="download-btn">
+                                <i class="bi bi-download"></i> Download JSON
+                            </button>
+                            <button class="btn btn-outline-success w-100" id="download-csv-btn">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Download CSV
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Import Data</h6>
+                            <p class="text-muted small">Upload transaction data</p>
+                            <div class="mb-3">
+                                <input type="file" class="form-control" id="import-file-header" accept=".json,.csv">
+                            </div>
+                            <button class="btn btn-outline-warning w-100" id="fresh-start-btn">
+                                <i class="bi bi-arrow-clockwise"></i> Fresh Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snackbar for notifications -->
+    <div id="snackbar" class="snackbar" role="alert" aria-live="assertive"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../assets/js/script.js"></script>
+    <script>
+        // The budgetTracker will be initialized by the main script.js file
+        // No additional initialization needed here
+        console.log('Transactions page script loaded');
+    </script>
+</body>
+</html>

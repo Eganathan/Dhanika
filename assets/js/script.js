@@ -1,11 +1,27 @@
 class BudgetTracker {
     constructor() {
         console.log('Initializing BudgetTracker...');
+        this.detectPage();
         this.initializeElements();
         this.initializeState();
         this.bindEvents();
+        this.setupStorageListener();
         this.initializeMobileMenu();
         this.initialize();
+    }
+
+    detectPage() {
+        try {
+            this.isTransactionsPage = window.location.pathname.includes('/transactions/');
+            console.log('Page detection:', {
+                pathname: window.location.pathname,
+                isTransactionsPage: this.isTransactionsPage,
+                pageType: this.isTransactionsPage ? 'Transactions' : 'Dashboard'
+            });
+        } catch (error) {
+            console.error('Error in detectPage:', error);
+            this.isTransactionsPage = false;
+        }
     }
 
     initializeElements() {
@@ -42,10 +58,51 @@ class BudgetTracker {
             emptyMonthlyMessage: document.getElementById('empty-monthly-message'),
             monthlyCategoryFilters: document.getElementById('monthly-category-filters'),
             monthlyTransactionListSkeleton: document.getElementById('monthly-transaction-list-skeleton'),
-            timeFilter: document.getElementById('time-filter')
+            timeFilter: document.getElementById('time-filter'),
+            transactionCount: document.getElementById('transaction-count'),
+            sortFilter: document.getElementById('sort-filter'),
+            clearSearch: document.getElementById('clear-search'),
+            selectAll: document.getElementById('select-all'),
+            bulkActions: document.getElementById('bulk-actions'),
+            selectedCount: document.getElementById('selected-count'),
+            bulkDelete: document.getElementById('bulk-delete'),
+            clearSelection: document.getElementById('clear-selection'),
+            showingInfo: document.getElementById('showing-info'),
+            listHeader: document.getElementById('list-header')
         };
         
         this.budgetChart = this.elements.budgetChartCanvas?.getContext('2d');
+    }
+
+    setupStorageListener() {
+        // Listen for storage changes from other tabs/pages
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'transactions') {
+                console.log('Transactions updated in another tab, refreshing...');
+                try {
+                    // Update local state with new data
+                    this.state.transactions = e.newValue ? JSON.parse(e.newValue) : [];
+                    
+                    // Refresh all displays
+                    this.renderTransactions();
+                    if (!this.isTransactionsPage) {
+                        this.renderMonthlyTransactions();
+                        this.updateChart();
+                    }
+                    this.updateSummary();
+                    this.setupCategoryFilters();
+                    
+                    if (this.isTransactionsPage) {
+                        this.updateTransactionCount();
+                        this.showListHeader();
+                    }
+                    
+                    this.showSnackbar('Data updated from another tab', 'info');
+                } catch (error) {
+                    console.error('Error handling storage update:', error);
+                }
+            }
+        });
     }
 
     initializeState() {
@@ -94,7 +151,8 @@ class BudgetTracker {
             currentActiveTooltip: null,
             currentCurrency: selectedCurrency,
             currentCurrencySymbol: selectedCurrencySymbol,
-            currentTimeFilter: 'this-month'
+            currentTimeFilter: this.isTransactionsPage ? 'all' : 'this-month',
+            currentSortFilter: 'date-desc'
         };
     }
 
@@ -308,6 +366,30 @@ class BudgetTracker {
             this.elements.timeFilter.addEventListener('change', (e) => this.handleTimeFilterChange(e.target.value));
         }
 
+        // Sort filter dropdown event binding
+        if (this.elements.sortFilter) {
+            this.elements.sortFilter.addEventListener('change', (e) => this.handleSortFilterChange(e.target.value));
+        }
+
+        // Clear search button
+        if (this.elements.clearSearch) {
+            this.elements.clearSearch.addEventListener('click', () => this.clearSearch());
+        }
+
+        // Select all checkbox
+        if (this.elements.selectAll) {
+            this.elements.selectAll.addEventListener('change', (e) => this.handleSelectAll(e.target.checked));
+        }
+
+        // Bulk operations
+        if (this.elements.bulkDelete) {
+            this.elements.bulkDelete.addEventListener('click', () => this.handleBulkDelete());
+        }
+
+        if (this.elements.clearSelection) {
+            this.elements.clearSelection.addEventListener('click', () => this.clearSelection());
+        }
+
         document.querySelectorAll('.dropdown-item[data-currency]')?.forEach(item => {
             item.addEventListener('click', (e) => this.changeCurrency(e));
         });
@@ -453,20 +535,22 @@ class BudgetTracker {
         let lastScrollY = window.scrollY;
         const header = document.querySelector('header');
         
-        window.addEventListener('scroll', () => {
-            const currentScrollY = window.scrollY;
-            
-            // Only apply on mobile screens
-            if (window.innerWidth <= 767) {
-                if (currentScrollY > 100) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
+        if (header) {
+            window.addEventListener('scroll', () => {
+                const currentScrollY = window.scrollY;
+                
+                // Only apply on mobile screens
+                if (window.innerWidth <= 767) {
+                    if (currentScrollY > 100) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
                 }
-            }
-            
-            lastScrollY = currentScrollY;
-        });
+                
+                lastScrollY = currentScrollY;
+            });
+        }
         
         // Mobile menu toggle
         if (this.mobileMenuToggle) {
@@ -645,18 +729,39 @@ class BudgetTracker {
             await this.loadConfiguration();
             this.initializeCurrency();
             this.setupTypeChangeListeners();
-            this.initializeChartDisplay();
+            
+            if (!this.isTransactionsPage) {
+                this.initializeChartDisplay();
+            }
+            
             this.initializeDateField();
             this.renderTransactions();
-            this.renderMonthlyTransactions();
-            this.updateChart();
+            
+            if (!this.isTransactionsPage) {
+                this.renderMonthlyTransactions();
+                this.updateChart();
+            }
+            
             this.updateSummary();
             this.setupTooltips();
             this.updateTooltipButtonState();
             this.setupCategoryFilters();
-            this.setupMonthlyCategoryFilters();
+            
+            if (!this.isTransactionsPage) {
+                this.setupMonthlyCategoryFilters();
+            }
+            
             this.setupKeyboardShortcuts();
             this.initializeHelpSection();
+            
+            // Transactions page specific initialization
+            if (this.isTransactionsPage) {
+                console.log('Initializing transactions page specific features');
+                this.updateTransactionCount();
+                this.showListHeader();
+                console.log('Transactions page initialization complete');
+            }
+            
             console.log('BudgetTracker initialized successfully');
         } catch (error) {
             console.error('Failed to initialize BudgetTracker:', error);
@@ -664,6 +769,22 @@ class BudgetTracker {
         } finally {
             this.showLoading(false);
             this.showSkeletons(false);
+        }
+    }
+
+    showListHeader() {
+        try {
+            if (this.elements.listHeader && this.state.transactions.length > 0) {
+                this.elements.listHeader.style.display = 'flex';
+                console.log('List header shown');
+            } else {
+                console.log('List header not shown:', {
+                    hasElement: !!this.elements.listHeader,
+                    transactionCount: this.state.transactions.length
+                });
+            }
+        } catch (error) {
+            console.error('Error in showListHeader:', error);
         }
     }
 
@@ -676,19 +797,29 @@ class BudgetTracker {
         const monthlyTransactionSkeleton = document.getElementById('monthly-transaction-list-skeleton');
 
         if (show) {
-            overviewContent.style.display = 'none';
-            overviewSkeleton.style.display = 'block';
-            transactionContent.style.display = 'none';
-            transactionSkeleton.style.display = 'block';
-            monthlyTransactionContent.style.display = 'none';
-            monthlyTransactionSkeleton.style.display = 'block';
+            // Chart overview elements (only on dashboard)
+            if (overviewContent) overviewContent.style.display = 'none';
+            if (overviewSkeleton) overviewSkeleton.style.display = 'block';
+            
+            // Transaction list elements (on both pages)
+            if (transactionContent) transactionContent.style.display = 'none';
+            if (transactionSkeleton) transactionSkeleton.style.display = 'block';
+            
+            // Monthly transaction elements (only on dashboard)
+            if (monthlyTransactionContent) monthlyTransactionContent.style.display = 'none';
+            if (monthlyTransactionSkeleton) monthlyTransactionSkeleton.style.display = 'block';
         } else {
-            overviewContent.style.display = 'block';
-            overviewSkeleton.style.display = 'none';
-            transactionContent.style.display = 'block';
-            transactionSkeleton.style.display = 'none';
-            monthlyTransactionContent.style.display = 'block';
-            monthlyTransactionSkeleton.style.display = 'none';
+            // Chart overview elements (only on dashboard)
+            if (overviewContent) overviewContent.style.display = 'block';
+            if (overviewSkeleton) overviewSkeleton.style.display = 'none';
+            
+            // Transaction list elements (on both pages)
+            if (transactionContent) transactionContent.style.display = 'block';
+            if (transactionSkeleton) transactionSkeleton.style.display = 'none';
+            
+            // Monthly transaction elements (only on dashboard)
+            if (monthlyTransactionContent) monthlyTransactionContent.style.display = 'block';
+            if (monthlyTransactionSkeleton) monthlyTransactionSkeleton.style.display = 'none';
         }
     }
 
@@ -1146,6 +1277,12 @@ class BudgetTracker {
         this.updateChart();
         this.updateSummary();
         
+        // Update transactions page specific elements
+        if (this.isTransactionsPage) {
+            this.updateTransactionCount();
+            this.showListHeader();
+        }
+        
         // Update tag chips to reflect new usage counts
         if (this.elements.tagsChips) {
             this.updateTagChips();
@@ -1174,7 +1311,16 @@ class BudgetTracker {
             this.state.transactions.push(transaction);
             console.log('Total transactions:', this.state.transactions.length);
             this.setupCategoryFilters(); // Refresh category filters
-            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
+            if (!this.isTransactionsPage) {
+                this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
+                this.renderMonthlyTransactions(); // Refresh monthly display
+                this.updateChart(); // Refresh chart
+            }
+            this.updateSummary(); // Always update summary
+            if (this.isTransactionsPage) {
+                this.updateTransactionCount();
+                this.showListHeader();
+            }
             this.showSnackbar('Transaction added successfully', 'success', true);
         } catch (error) {
             console.error('Error adding transaction:', error);
@@ -1188,7 +1334,15 @@ class BudgetTracker {
             if (index !== -1) {
                 this.state.transactions[index] = transaction;
                 this.setupCategoryFilters(); // Refresh category filters
-            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
+                if (!this.isTransactionsPage) {
+                    this.setupMonthlyCategoryFilters(); // Refresh monthly category filters
+                    this.renderMonthlyTransactions(); // Refresh monthly display
+                    this.updateChart(); // Refresh chart
+                }
+                this.updateSummary(); // Always update summary
+                if (this.isTransactionsPage) {
+                    this.updateTransactionCount();
+                }
                 this.showSnackbar('Transaction updated successfully', 'success', true);
             } else {
                 throw new Error('Transaction not found');
@@ -1226,11 +1380,16 @@ class BudgetTracker {
             
             this.saveTransactions();
             this.setupCategoryFilters(); // Refresh category filters
-            this.setupMonthlyCategoryFilters(); // Refresh monthly category filters BEFORE rendering
+            if (!this.isTransactionsPage) {
+                this.setupMonthlyCategoryFilters(); // Refresh monthly category filters BEFORE rendering
+                this.renderMonthlyTransactions();
+                this.updateChart();
+            }
             this.renderTransactions();
-            this.renderMonthlyTransactions();
-            this.updateChart();
             this.updateSummary();
+            if (this.isTransactionsPage) {
+                this.updateTransactionCount();
+            }
             this.showSnackbar('Transaction deleted successfully', 'success', true);
             console.log('Transaction deleted successfully');
         } catch (error) {
@@ -1542,9 +1701,20 @@ class BudgetTracker {
 
         const safeId = String(transaction.id).replace(/['"]/g, '');
 
+        // Add checkbox for bulk selection on transactions page
+        const checkboxHtml = this.isTransactionsPage ? `
+            <div class="transaction-checkbox">
+                <div class="form-check">
+                    <input class="form-check-input transaction-select" type="checkbox" 
+                           data-transaction-id="${safeId}" onchange="window.budgetTracker?.updateBulkActions()">
+                </div>
+            </div>
+        ` : '';
+
         return `
             <li class="list-group-item transaction-item" data-transaction-id="${safeId}">
-                <div class="transaction-item-grid">
+                <div class="transaction-item-grid ${this.isTransactionsPage ? 'with-checkbox' : ''}">
+                    ${checkboxHtml}
                     <div class="transaction-icon">
                         <span class="transaction-emoji">${emoji}</span>
                     </div>
@@ -1928,21 +2098,147 @@ class BudgetTracker {
         this.state.currentTimeFilter = timeFilter;
         this.updateChart();
         this.updateSummary();
+        if (this.isTransactionsPage) {
+            this.renderTransactions();
+            this.updateTransactionCount();
+        }
+    }
+
+    handleSortFilterChange(sortFilter) {
+        this.state.currentSortFilter = sortFilter;
+        if (this.isTransactionsPage) {
+            this.renderTransactions();
+        }
+    }
+
+    clearSearch() {
+        if (this.elements.searchInput) {
+            this.elements.searchInput.value = '';
+            this.handleSearchInput({ target: { value: '' } });
+        }
+    }
+
+    handleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('#transaction-list input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+        this.updateBulkActions();
+    }
+
+    handleBulkDelete() {
+        const selectedCheckboxes = document.querySelectorAll('#transaction-list input[type="checkbox"]:checked');
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.transactionId);
+        
+        if (selectedIds.length === 0) return;
+
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} transaction(s)?`)) {
+            selectedIds.forEach(id => this.deleteTransaction(id));
+            this.clearSelection();
+            this.showSnackbar(`Deleted ${selectedIds.length} transaction(s)`, 'success');
+        }
+    }
+
+    clearSelection() {
+        const checkboxes = document.querySelectorAll('#transaction-list input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        if (this.elements.selectAll) {
+            this.elements.selectAll.checked = false;
+        }
+        this.updateBulkActions();
+    }
+
+    updateBulkActions() {
+        const selectedCheckboxes = document.querySelectorAll('#transaction-list input[type="checkbox"]:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (this.elements.bulkActions) {
+            if (count > 0) {
+                this.elements.bulkActions.classList.remove('d-none');
+            } else {
+                this.elements.bulkActions.classList.add('d-none');
+            }
+        }
+        
+        if (this.elements.selectedCount) {
+            this.elements.selectedCount.textContent = count;
+        }
+    }
+
+    updateTransactionCount() {
+        try {
+            const filteredTransactions = this.getFilteredTransactions();
+            console.log('Updating transaction count:', filteredTransactions.length);
+            
+            if (this.elements.transactionCount) {
+                this.elements.transactionCount.textContent = filteredTransactions.length;
+            }
+            
+            if (this.elements.showingInfo) {
+                this.elements.showingInfo.textContent = `Showing ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''}`;
+            }
+        } catch (error) {
+            console.error('Error in updateTransactionCount:', error);
+        }
     }
     
     getFilteredTransactions() {
-        if (this.state.currentTimeFilter === 'this-month') {
+        let filtered = [...this.state.transactions];
+        
+        // Apply time filter
+        if (this.state.currentTimeFilter !== 'all') {
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
             
-            return this.state.transactions.filter(transaction => {
+            filtered = filtered.filter(transaction => {
                 const transactionDate = new Date(transaction.date);
-                return transactionDate.getMonth() === currentMonth && 
-                       transactionDate.getFullYear() === currentYear;
+                const transactionMonth = transactionDate.getMonth();
+                const transactionYear = transactionDate.getFullYear();
+                
+                switch (this.state.currentTimeFilter) {
+                    case 'this-month':
+                        return transactionMonth === currentMonth && transactionYear === currentYear;
+                    case 'last-month':
+                        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+                        return transactionMonth === lastMonth && transactionYear === lastMonthYear;
+                    case 'this-year':
+                        return transactionYear === currentYear;
+                    case 'last-year':
+                        return transactionYear === currentYear - 1;
+                    default:
+                        return true;
+                }
             });
         }
-        return this.state.transactions;
+        
+        // Apply sorting if on transactions page
+        if (this.isTransactionsPage && this.state.currentSortFilter) {
+            filtered.sort((a, b) => {
+                switch (this.state.currentSortFilter) {
+                    case 'date-desc':
+                        return new Date(b.date) - new Date(a.date);
+                    case 'date-asc':
+                        return new Date(a.date) - new Date(b.date);
+                    case 'amount-desc':
+                        return b.amount - a.amount;
+                    case 'amount-asc':
+                        return a.amount - b.amount;
+                    case 'category':
+                        return a.category.localeCompare(b.category);
+                    default:
+                        return new Date(b.date) - new Date(a.date);
+                }
+            });
+        } else {
+            // Default sorting for dashboard (newest first)
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+        
+        return filtered;
     }
     
     initializeChartDisplay() {
@@ -2285,6 +2581,15 @@ class BudgetTracker {
     saveTransactions() {
         try {
             localStorage.setItem('transactions', JSON.stringify(this.state.transactions));
+            
+            // Dispatch storage event to notify other tabs/pages of changes
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'transactions',
+                newValue: JSON.stringify(this.state.transactions),
+                oldValue: null, // Could store previous value if needed
+                storageArea: localStorage,
+                url: window.location.href
+            }));
         } catch (error) {
             console.error('Failed to save transactions to localStorage:', error);
             this.showSnackbar('Failed to save data locally', 'error');
@@ -4075,10 +4380,23 @@ Please provide clear, practical, and easy-to-follow recommendations.
     }
 
     showLoading(show) {
+        console.log('showLoading called with:', show);
+        
         if (show) {
             document.body.classList.add('loading');
         } else {
             document.body.classList.remove('loading');
+        }
+        
+        // Also handle the loading screen element directly (for transactions page)
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            if (show) {
+                loadingScreen.style.display = 'flex';
+            } else {
+                loadingScreen.style.display = 'none';
+                console.log('Loading screen hidden');
+            }
         }
     }
 
@@ -4203,8 +4521,11 @@ Please provide clear, practical, and easy-to-follow recommendations.
                 switch (e.key.toLowerCase()) {
                     case 'n': // New transaction
                         e.preventDefault();
-                        this.elements.transactionForm.querySelector('#description').focus();
-                        this.showSnackbar('Keyboard shortcut: New transaction', 'info');
+                        const descriptionInput = this.elements.transactionForm?.querySelector('#description');
+                        if (descriptionInput) {
+                            descriptionInput.focus();
+                            this.showSnackbar('Keyboard shortcut: New transaction', 'info');
+                        }
                         break;
                     case 'e': // Export data
                         e.preventDefault();
@@ -4443,6 +4764,11 @@ Please provide clear, practical, and easy-to-follow recommendations.
         );
         const chipsContainer = this.elements.tagsChips;
 
+        if (!chipsContainer) {
+            console.log('Tags chips container not found, skipping tag chips update');
+            return;
+        }
+
         chipsContainer.innerHTML = '';
 
         if (suggestions.length === 0) {
@@ -4612,11 +4938,19 @@ Please provide clear, practical, and easy-to-follow recommendations.
     }
 
     updateClearButton() {
+        if (!this.elements.tagsInput || !this.elements.clearTagsBtn) {
+            console.log('Tags input or clear button not found, skipping clear button update');
+            return;
+        }
         const hasContent = this.elements.tagsInput.value.trim().length > 0;
         this.elements.clearTagsBtn.classList.toggle('show', hasContent);
     }
 
     clearAllTags() {
+        if (!this.elements.tagsInput) {
+            console.log('Tags input not found, skipping clear tags');
+            return;
+        }
         this.elements.tagsInput.value = '';
         this.elements.tagsInput.focus();
         this.updateTagChips();
@@ -4634,7 +4968,9 @@ Please provide clear, practical, and easy-to-follow recommendations.
 // Initialize the application
 let budgetTracker;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing BudgetTracker...');
     budgetTracker = new BudgetTracker();
+    window.budgetTracker = budgetTracker; // Make globally available
     
     // Add hover effects for transaction actions
     const style = document.createElement('style');
