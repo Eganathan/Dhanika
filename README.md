@@ -1,26 +1,120 @@
-# Personal Budget Planner
+# Dhanika - Personal Budget Planner
 
-This is a simple, yet powerful personal budget planning application designed to help you visualize and manage your expenses efficiently.
+A modern, privacy-first personal budget planning application designed to help you visualize and manage your finances with ease. Built with vanilla web technologies and a focus on user experience.
 
-## Features
+## ✨ Core Features
 
-*   **Add Transactions:** Easily add income and expense transactions.
-*   **Categorize with Tags:** Add custom tags to your transactions (e.g., `rent`, `groceries`, `credit-card`) to better organize your finances.
-*   **Visualize Your Budget:** A clear doughnut chart provides an instant overview of your income versus expenses.
-*   **Transaction History:** View a detailed list of all your past transactions.
-*   **Persistent Storage:** Your data is saved in your browser's local storage, so you can pick up where you left off.
+### 📊 **Transaction Management**
+*   **Smart Transaction Entry:** Intuitive form with real-time validation and auto-complete
+*   **Rich Categories:** 8 income and 13 expense categories with emoji indicators
+*   **Flexible Tagging:** Add custom tags with autocomplete suggestions and chip interface
+*   **Quick Date Selection:** Today, Yesterday, This Week, Last Week shortcuts
+*   **Edit & Delete:** Full CRUD operations with confirmation dialogs
+*   **Bulk Operations:** Select multiple transactions for batch deletion
 
-## How to Use
+### 🎨 **Advanced UI/UX**
+*   **Dual Interface:** Home dashboard + dedicated transactions page
+*   **Responsive Design:** Mobile-first approach with adaptive layouts
+*   **Modern Glassmorphism:** Beautiful translucent cards and components
+*   **Interactive Charts:** Dynamic doughnut and pie charts with Chart.js
+*   **Real-time Updates:** Live chart and summary updates
+*   **Loading States:** Skeleton screens and smooth transitions
 
-1.  **Add a Transaction:**
-    *   Fill in the description, amount, and select the transaction type (Income or Expense).
-    *   Add comma-separated tags to categorize your transaction.
-    *   Click "Add".
-2.  **View Your Budget:** The chart will automatically update to reflect your new transaction.
-3.  **Track Your History:** The transaction list will show all your entries, complete with their tags.
+### 📱 **Mobile-Optimized Experience**
+*   **Touch-Friendly Controls:** Properly sized buttons and inputs
+*   **Responsive Grid Layout:** Adapts to all screen sizes
+*   **Mobile Menu System:** Slide-out navigation panel
+*   **Optimized Typography:** Readable text at all sizes
+*   **Progressive Enhancement:** Works great on any device
 
-## Future Ideas
+### 🔧 **Enhanced Functionality**
+*   **Multi-Currency Support:** 11+ international currencies with proper formatting
+*   **Advanced Filtering:** Filter by type, category, tags, and date ranges
+*   **Smart Search:** Real-time search across descriptions, categories, and tags
+*   **Data Export/Import:** Secure encrypted backup and restore
+*   **Monthly Views:** Dedicated this-month transaction analysis
+*   **Top Transactions:** Highlighted high-value transactions
 
-*   **Tag-Based Filtering:** Filter transactions by specific tags.
-*   **Detailed Reports:** Generate reports based on tags or date ranges.
-*   **Edit/Delete Transactions:** Functionality to modify or remove existing entries.
+## 🚀 How to Use
+
+### **Adding Transactions:**
+1. Choose Income or Expense type
+2. Enter amount with automatic currency formatting
+3. Add description and select from categorized options
+4. Use quick date buttons or pick custom date
+5. Add optional tags with autocomplete suggestions
+6. Save and see instant updates across all views
+
+### **Managing Data:**
+- **Edit:** Click pencil icon on any transaction to modify
+- **Delete:** Individual delete or bulk selection for multiple items
+- **Search:** Use the search bar to find specific transactions
+- **Filter:** Apply category and type filters for focused views
+- **Export:** Secure encrypted backup of all your data
+
+### **Navigation:**
+- **Home:** Overview with charts, recent transactions, and quick actions
+- **Transactions:** Comprehensive list with advanced filtering and management
+- **Mobile Menu:** Slide-out menu for easy navigation on mobile devices
+
+## 🏗️ Technical Architecture
+
+### **Frontend Stack:**
+- **Vanilla JavaScript (ES6+):** Modern, performant, framework-free
+- **HTML5 & CSS3:** Semantic structure with advanced styling
+- **Bootstrap 5:** Responsive grid and component foundation
+- **Chart.js:** Interactive data visualizations
+- **CSS Custom Properties:** Dynamic theming and consistent design
+
+### **Browser APIs:**
+- **LocalStorage:** Client-side data persistence
+- **Web Crypto API:** Secure client-side encryption
+- **Fetch API:** Dynamic content loading
+- **Intersection Observer:** Performance optimizations
+
+## 🛡️ Privacy & Security
+
+*   **Zero-Knowledge Architecture:** All data stays in your browser
+*   **No Server Required:** Fully client-side application
+*   **Encrypted Backups:** AES-256-GCM encryption for exports
+*   **No Tracking:** Absolutely no data collection or analytics
+*   **Local Storage Only:** Your financial data never leaves your device
+
+## 🎯 Recent Updates & Improvements
+
+### **Edit Transaction Dialog (New!)**
+- Modal-based editing with same UI as home screen
+- Pre-populated form data with proper category loading
+- Responsive design matching mobile patterns
+- Tag management with add/remove functionality
+
+### **Enhanced Mobile Experience**
+- Improved transaction list responsive design
+- Touch-optimized button sizing and spacing
+- Better text truncation and overflow handling
+- Consistent spacing and alignment across screen sizes
+
+### **Navigation Improvements**
+- "View All Transactions" button on home screen
+- Seamless flow between home and transactions pages
+- Mobile-first navigation patterns
+- Consistent header and menu systems
+
+### **Data Consistency**
+- Single source of truth for transaction categories
+- Proper path resolution for all page types
+- Consistent category data loading
+- Improved error handling and debugging
+
+## 🌟 Design Philosophy
+
+Built with a "vibe-coding" approach that prioritizes:
+- **User Experience First:** Every interaction feels natural and responsive
+- **Privacy by Design:** Your data is yours, period
+- **Progressive Enhancement:** Works great at every level of device capability
+- **Intuitive Interface:** Complex functionality made simple through thoughtful design
+
+---
+
+**Live Demo:** [dhanika.eknath.dev](https://dhanika.eknath.dev)  
+**Repository:** Privacy-focused, client-side budget management for the modern web

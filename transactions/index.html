@@ -44,6 +44,11 @@
                 gap: 0.5rem;
             }
             
+            .transaction-item-grid {
+                grid-template-columns: 40px 1fr auto;
+                gap: 0.5rem;
+            }
+            
             .transaction-actions {
                 display: flex;
                 flex-direction: column;
@@ -51,8 +56,108 @@
             }
             
             .transaction-actions .btn {
-                padding: 0.25rem;
+                padding: 0.25rem 0.375rem;
                 font-size: 0.75rem;
+                min-width: 28px;
+                height: 28px;
+                line-height: 1;
+                border-radius: 4px;
+            }
+            
+            .transaction-description {
+                font-size: 0.875rem;
+                line-height: 1.3;
+                max-width: calc(100% - 20px);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .transaction-meta {
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                margin-top: 2px;
+            }
+            
+            .transaction-amount .amount {
+                font-size: 0.875rem;
+                font-weight: 600;
+            }
+            
+            /* Stack actions vertically on very small screens */
+            @media (max-width: 576px) {
+                .transaction-description {
+                    font-size: 0.8125rem;
+                    max-width: calc(100% - 10px);
+                }
+                
+                .transaction-meta {
+                    font-size: 0.6875rem;
+                }
+                
+                .transaction-actions .btn {
+                    font-size: 0.6875rem;
+                    padding: 0.1875rem 0.3125rem;
+                    min-width: 24px;
+                    height: 24px;
+                }
+            }
+        }
+        
+        /* Enhanced mobile transaction list styling */
+        @media (max-width: 768px) {
+            .list-group-item {
+                padding: 0.75rem 1rem;
+                margin-bottom: 0.5rem;
+                border-radius: 8px;
+            }
+            
+            .transaction-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .transaction-emoji {
+                font-size: 1.25rem;
+            }
+            
+            .transaction-details {
+                min-width: 0;
+                flex: 1;
+            }
+            
+            .transaction-amount {
+                text-align: right;
+                min-width: fit-content;
+            }
+            
+            /* Better checkbox spacing */
+            .transaction-checkbox {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .form-check-input {
+                margin: 0;
+            }
+        }
+        
+        /* Very small screens - even more compact */
+        @media (max-width: 576px) {
+            .list-group-item {
+                padding: 0.625rem 0.875rem;
+                margin-bottom: 0.375rem;
+            }
+            
+            .transaction-emoji {
+                font-size: 1.125rem;
+            }
+            
+            .transaction-item-grid,
+            .transaction-item-grid.with-checkbox {
+                align-items: center;
             }
         }
         
@@ -526,6 +631,90 @@
         </div>
     </main>
 
+
+    <!-- Edit Transaction Modal -->
+    <div class="modal fade" id="edit-transaction-modal" tabindex="-1" aria-labelledby="edit-transaction-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="edit-transaction-label">Edit Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-transaction-form" role="form" aria-label="Edit transaction">
+                        <input type="hidden" id="edit-transaction-id">
+                        <fieldset class="mb-3 type-selector">
+                            <legend class="visually-hidden">Transaction Type</legend>
+                            <div class="btn-group w-100" role="radiogroup" aria-label="Select transaction type">
+                                <input type="radio" class="btn-check" name="edit-type" id="edit-income" value="income" aria-describedby="edit-income-help">
+                                <label class="btn btn-outline-success" for="edit-income">
+                                    <i class="bi bi-arrow-up" aria-hidden="true"></i> Income
+                                </label>
+                                <input type="radio" class="btn-check" name="edit-type" id="edit-expense" value="expense" aria-describedby="edit-expense-help">
+                                <label class="btn btn-outline-danger" for="edit-expense">
+                                    <i class="bi bi-arrow-down" aria-hidden="true"></i> Expense
+                                </label>
+                            </div>
+                            <div id="edit-income-help" class="visually-hidden">Select this for money coming in</div>
+                            <div id="edit-expense-help" class="visually-hidden">Select this for money going out</div>
+                        </fieldset>
+                        <div class="mb-3">
+                            <label for="edit-amount" class="form-label visually-hidden">Amount</label>
+                            <input type="number" class="form-control" id="edit-amount" name="edit-amount" placeholder="Amount" required step="0.01" min="0.01" aria-describedby="edit-amount-help">
+                            <div id="edit-amount-help" class="visually-hidden">Enter the transaction amount in your selected currency</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-description" class="form-label visually-hidden">Transaction Description</label>
+                            <input type="text" class="form-control" id="edit-description" name="edit-description" placeholder="Description" required aria-describedby="edit-description-help">
+                            <div id="edit-description-help" class="visually-hidden">Enter a brief description of the transaction</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-date" class="form-label visually-hidden">Transaction Date</label>
+                            <div class="date-tags-header">
+                                <div class="date-quick-tags d-flex gap-2 flex-wrap" id="edit-date-quick-tags">
+                                    <!-- Date suggestion buttons will be populated here -->
+                                </div>
+                                <button type="button" id="edit-clear-date-btn" class="clear-date-btn" title="Reset to today">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <input type="date" class="form-control" id="edit-date" name="edit-date" required aria-describedby="edit-date-help">
+                            <div id="edit-date-help" class="visually-hidden">Select the date when this transaction occurred</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-category" class="form-label visually-hidden">Category</label>
+                            <select class="form-select" id="edit-category" name="edit-category" required aria-describedby="edit-category-help">
+                                <option value="">Select Category</option>
+                            </select>
+                            <div id="edit-category-help" class="visually-hidden">Choose a category to help organize your transactions</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-tags" class="form-label visually-hidden">Tags (Optional)</label>
+                            <div class="tags-header">
+                                <div id="edit-tags-chips" class="tags-chips d-flex gap-1 flex-wrap mb-2">
+                                    <!-- Tag chips will be displayed here -->
+                                </div>
+                                <button type="button" id="edit-clear-tags-btn" class="clear-tags-btn" title="Clear all tags">
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div class="tags-input-container">
+                                <input type="text" class="form-control" id="edit-tags" name="edit-tags" placeholder="Add tags (press Enter to add)" aria-describedby="edit-tags-help" autocomplete="off">
+                                <div id="edit-tags-suggestions" class="tags-suggestions">
+                                    <!-- Tag suggestions will be displayed here -->
+                                </div>
+                            </div>
+                            <div id="edit-tags-help" class="visually-hidden">Add optional tags for better organization. Press Enter to add a tag.</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-transaction">Update Transaction</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Export/Import Modal -->
     <div class="modal fade" id="export-import-modal" tabindex="-1" aria-labelledby="export-import-label" aria-hidden="true">

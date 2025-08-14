@@ -198,6 +198,9 @@ class BudgetTracker {
             currentTimeFilter: this.isTransactionsPage ? 'all' : 'this-month',
             currentSortFilter: 'date-desc'
         };
+
+        // Initialize edit modal tags array
+        this.editModalTags = [];
     }
 
     createSampleTransactions() {
@@ -342,6 +345,35 @@ class BudgetTracker {
         // Help section toggle
         const helpToggle = document.getElementById('toggle-help-section');
         helpToggle?.addEventListener('click', () => this.toggleHelpSection());
+
+        // Edit modal event listeners
+        const saveEditBtn = document.getElementById('save-edit-transaction');
+        saveEditBtn?.addEventListener('click', () => this.saveEditTransaction());
+
+        const editTypeRadios = document.querySelectorAll('input[name="edit-type"]');
+        editTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.populateEditCategories(e.target.value);
+                }
+            });
+        });
+
+        const editTagsInput = document.getElementById('edit-tags');
+        editTagsInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                e.preventDefault();
+                this.addEditModalTag(e.target.value.trim());
+            }
+        });
+
+        const editClearTagsBtn = document.getElementById('edit-clear-tags-btn');
+        editClearTagsBtn?.addEventListener('click', () => this.clearEditModalTags());
+
+        const editClearDateBtn = document.getElementById('edit-clear-date-btn');
+        editClearDateBtn?.addEventListener('click', () => {
+            document.getElementById('edit-date').value = new Date().toISOString().split('T')[0];
+        });
         
         // Search input event binding with debugging
         if (this.elements.searchInput) {
@@ -908,7 +940,9 @@ class BudgetTracker {
             }
             
             this.showLoading(true);
-            const response = await fetch('assets/json/transaction-types.json');
+            // Use correct path based on current page location
+            const jsonPath = this.isTransactionsPage ? '../assets/json/transaction-types.json' : 'assets/json/transaction-types.json';
+            const response = await fetch(jsonPath);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -1500,6 +1534,297 @@ class BudgetTracker {
     cancelEdit() {
         this.state.editingTransactionId = null;
         this.resetForm();
+    }
+
+    // Edit modal functionality for transactions page
+    openEditModal(id) {
+        console.log('openEditModal called with ID:', id);
+        const transaction = this.state.transactions.find(t => t.id === id);
+        if (!transaction) {
+            console.error('Transaction not found for ID:', id);
+            return;
+        }
+
+        // Get modal elements
+        const modal = document.getElementById('edit-transaction-modal');
+        if (!modal) {
+            console.error('Edit transaction modal not found in DOM');
+            return;
+        }
+        console.log('Modal found, populating with transaction:', transaction);
+        console.log('Transaction category:', transaction.category, 'Transaction type:', transaction.type);
+        console.log('Transaction types loaded:', !!this.state.transactionTypes);
+        console.log('Number of income categories:', this.state.transactionTypes?.income?.types?.length || 0);
+        if (this.state.transactionTypes?.income?.types?.length === 3) {
+            console.warn('⚠️ Using FALLBACK categories - JSON file failed to load!');
+        } else {
+            console.log('✅ Using FULL categories from JSON file');
+        }
+
+        // Populate form with transaction data
+        document.getElementById('edit-transaction-id').value = transaction.id;
+        document.querySelector(`input[name="edit-type"][value="${transaction.type}"]`).checked = true;
+        
+        const amountInput = document.getElementById('edit-amount');
+        amountInput.value = transaction.amount;
+        amountInput.placeholder = `Amount (${this.state.currentCurrencySymbol})`;
+        
+        document.getElementById('edit-description').value = transaction.description;
+        
+        // Set the date
+        const dateInput = document.getElementById('edit-date');
+        if (dateInput && transaction.date) {
+            const transactionDate = new Date(transaction.date);
+            const dateString = transactionDate.toISOString().split('T')[0];
+            dateInput.value = dateString;
+        }
+
+        // Populate categories based on type
+        console.log('About to populate categories for type:', transaction.type);
+        this.populateEditCategories(transaction.type);
+        
+        // Try multiple times to set the category value with increasing delays
+        const trySetCategory = (attempt = 1) => {
+            const categorySelect = document.getElementById('edit-category');
+            if (categorySelect && categorySelect.options.length > 1) {
+                const availableOptions = Array.from(categorySelect.options).map(o => o.value);
+                console.log('=== CATEGORY DEBUG ===');
+                console.log('Available options:', availableOptions);
+                console.log('Transaction category:', transaction.category);
+                console.log('Match found:', availableOptions.includes(transaction.category));
+                console.table(Array.from(categorySelect.options).map(o => ({ value: o.value, text: o.text })));
+                
+                categorySelect.value = transaction.category;
+                
+                if (categorySelect.value === transaction.category) {
+                    console.log('✅ Category set successfully:', transaction.category);
+                } else {
+                    console.log('❌ Category not set. Current value:', categorySelect.value);
+                    if (attempt < 3) {
+                        setTimeout(() => trySetCategory(attempt + 1), 100 * attempt);
+                    } else {
+                        console.error('Failed to set category after 3 attempts');
+                    }
+                }
+            } else {
+                console.log(`Attempt ${attempt} - Category select not ready:`, {
+                    found: !!categorySelect,
+                    optionCount: categorySelect?.options.length || 0
+                });
+                if (attempt < 5) {
+                    setTimeout(() => trySetCategory(attempt + 1), 50 * attempt);
+                }
+            }
+        };
+        
+        // Start trying to set the category
+        setTimeout(() => trySetCategory(1), 50);
+
+        // Handle tags - convert from comma-separated string to array
+        if (transaction.tags && typeof transaction.tags === 'string') {
+            this.editModalTags = transaction.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+        } else if (Array.isArray(transaction.tags)) {
+            this.editModalTags = [...transaction.tags];
+        } else {
+            this.editModalTags = [];
+        }
+        this.renderEditModalTags();
+
+        // Setup date quick tags
+        this.setupEditModalDateTags();
+
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        console.log('Edit modal should now be visible');
+    }
+
+    populateEditCategories(type) {
+        const categorySelect = document.getElementById('edit-category');
+        if (!categorySelect) {
+            console.error('Edit category select not found');
+            return;
+        }
+
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
+        
+        if (this.state.transactionTypes?.[type]) {
+            console.log('Populating categories for type:', type, 'Categories:', this.state.transactionTypes[type].types);
+            const categoriesAdded = [];
+            this.state.transactionTypes[type].types.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                categorySelect.appendChild(option);
+                categoriesAdded.push(category.value);
+            });
+            console.log('Categories added to dropdown:', categoriesAdded);
+        } else {
+            console.error('No transaction types found for type:', type, 'Available types:', this.state.transactionTypes);
+        }
+    }
+
+    setupEditModalDateTags() {
+        const container = document.getElementById('edit-date-quick-tags');
+        if (!container) return;
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const thisWeekStart = new Date(today);
+        thisWeekStart.setDate(today.getDate() - today.getDay());
+        
+        const lastWeekStart = new Date(thisWeekStart);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+        const dateOptions = [
+            { label: 'Today', date: today.toISOString().split('T')[0] },
+            { label: 'Yesterday', date: yesterday.toISOString().split('T')[0] },
+            { label: 'This Week', date: thisWeekStart.toISOString().split('T')[0] },
+            { label: 'Last Week', date: lastWeekStart.toISOString().split('T')[0] }
+        ];
+
+        container.innerHTML = '';
+        dateOptions.forEach(option => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm btn-outline-secondary';
+            button.textContent = option.label;
+            button.style.fontSize = '0.75rem';
+            button.style.padding = '0.25rem 0.5rem';
+            button.onclick = () => {
+                document.getElementById('edit-date').value = option.date;
+                // Update visual state
+                container.querySelectorAll('button').forEach(b => b.classList.remove('btn-primary'));
+                container.querySelectorAll('button').forEach(b => b.classList.add('btn-outline-secondary'));
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-primary');
+            };
+            container.appendChild(button);
+        });
+    }
+
+    renderEditModalTags() {
+        const container = document.getElementById('edit-tags-chips');
+        if (!container) return;
+
+        container.innerHTML = '';
+        this.editModalTags.forEach(tag => {
+            const chip = document.createElement('span');
+            chip.className = 'badge bg-primary d-flex align-items-center gap-1';
+            chip.innerHTML = `
+                ${tag}
+                <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem; padding: 0" onclick="window.budgetTracker.removeEditModalTag('${tag}')" aria-label="Remove ${tag} tag"></button>
+            `;
+            container.appendChild(chip);
+        });
+
+        // Update clear button state
+        const clearBtn = document.getElementById('edit-clear-tags-btn');
+        if (clearBtn) {
+            clearBtn.disabled = this.editModalTags.length === 0;
+        }
+    }
+
+    addEditModalTag(tag) {
+        const trimmedTag = tag.trim().toLowerCase();
+        if (trimmedTag && !this.editModalTags.includes(trimmedTag)) {
+            this.editModalTags.push(trimmedTag);
+            this.renderEditModalTags();
+            document.getElementById('edit-tags').value = '';
+        }
+    }
+
+    removeEditModalTag(tag) {
+        this.editModalTags = this.editModalTags.filter(t => t !== tag);
+        this.renderEditModalTags();
+    }
+
+    clearEditModalTags() {
+        this.editModalTags = [];
+        this.renderEditModalTags();
+        document.getElementById('edit-tags').value = '';
+    }
+
+    saveEditTransaction() {
+        console.log('saveEditTransaction called');
+        const form = document.getElementById('edit-transaction-form');
+        const formData = new FormData(form);
+        
+        const transactionId = document.getElementById('edit-transaction-id').value;
+        const type = formData.get('edit-type');
+        const amount = parseFloat(formData.get('edit-amount'));
+        const description = formData.get('edit-description');
+        const date = formData.get('edit-date');
+        const category = formData.get('edit-category');
+
+        console.log('Form data extracted:', { transactionId, type, amount, description, date, category });
+
+        // Validation
+        if (!type || !amount || !description || !date || !category) {
+            console.error('Validation failed:', { type: !!type, amount: !!amount, description: !!description, date: !!date, category: !!category });
+            this.showSnackbar('Please fill in all required fields', 'error');
+            return;
+        }
+
+        // Find and update transaction
+        const transactionIndex = this.state.transactions.findIndex(t => t.id === transactionId);
+        console.log('Transaction lookup:', { transactionId, transactionIndex, totalTransactions: this.state.transactions.length });
+        if (transactionIndex === -1) {
+            console.error('Transaction not found with ID:', transactionId);
+            this.showSnackbar('Transaction not found', 'error');
+            return;
+        }
+
+        // Get category emoji
+        const categoryData = this.state.transactionTypes?.[type]?.types?.find(cat => cat.value === category);
+        const emoji = categoryData ? categoryData.emoji : '💳';
+
+        // Update transaction
+        this.state.transactions[transactionIndex] = {
+            ...this.state.transactions[transactionIndex],
+            type,
+            amount,
+            description,
+            date,
+            category,
+            tags: this.editModalTags.join(', '), // Convert array back to comma-separated string
+            emoji
+        };
+
+        // Save to localStorage
+        this.saveTransactions();
+
+        // Close modal
+        const modal = document.getElementById('edit-transaction-modal');
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) {
+            bsModal.hide();
+        } else {
+            console.warn('Bootstrap modal instance not found, hiding manually');
+            modal?.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            backdrop?.remove();
+        }
+
+        // Refresh displays
+        console.log('Refreshing displays after update');
+        this.renderTransactions();
+        if (!this.isTransactionsPage) {
+            this.renderMonthlyTransactions();
+            this.updateChart();
+        }
+        this.updateSummary();
+        this.setupCategoryFilters();
+        if (this.isTransactionsPage) {
+            this.updateTransactionCount();
+        }
+        
+        console.log('Transaction update completed successfully');
+        this.showSnackbar('Transaction updated successfully!', 'success');
     }
 
     handleFreshStart() {
@@ -4329,7 +4654,12 @@ Please provide clear, practical, and easy-to-follow recommendations.
             }
             
             if (action === 'edit') {
-                this.editTransaction(id);
+                console.log('Edit action triggered. isTransactionsPage:', this.isTransactionsPage, 'ID:', id);
+                if (this.isTransactionsPage) {
+                    this.openEditModal(id);
+                } else {
+                    this.editTransaction(id);
+                }
             } else if (action === 'delete') {
                 this.showDeleteConfirmation(id);
             } else {
