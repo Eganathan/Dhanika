@@ -37,6 +37,38 @@
             border-radius: 3px;
         }
         
+        /* Fix content hiding under sticky header on mobile */
+        @media (max-width: 768px) {
+            main.container-fluid {
+                padding-top: 120px !important;
+            }
+            
+            /* Make filter controls more mobile-friendly */
+            .d-flex.align-items-center.gap-2.flex-wrap {
+                justify-content: center !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Improve select dropdowns on mobile */
+            .form-select-sm {
+                font-size: 0.875rem !important;
+                padding: 0.375rem 0.75rem !important;
+                min-width: 100px !important;
+            }
+            
+            /* Stack filter controls vertically on very small screens */
+            @media (max-width: 576px) {
+                .d-flex.align-items-center.gap-2.flex-wrap {
+                    flex-direction: column !important;
+                    align-items: stretch !important;
+                }
+                
+                .d-flex.align-items-center:has(.form-select) {
+                    justify-content: center;
+                }
+            }
+        }
+        
         /* Responsive adjustments for mobile */
         @media (max-width: 768px) {
             .transaction-item-grid.with-checkbox {
@@ -467,10 +499,10 @@
                                 <h2 class="card-title mb-1" id="transactions-heading">All Transactions</h2>
                                 <small class="text-muted">Manage all your income and expenses</small>
                             </div>
-                            <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <!-- Time Period Filter -->
                                 <div class="d-flex align-items-center">
-                                    <label for="time-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Period:</label>
+                                    <label for="time-filter" class="form-label mb-0 text-muted me-2 d-none d-md-block" style="font-size: 0.75rem;">Period:</label>
                                     <select class="form-select form-select-sm" id="time-filter" name="time-filter" style="width: auto; min-width: 120px;">
                                         <option value="all" selected>All Time</option>
                                         <option value="this-month">This Month</option>
@@ -481,7 +513,7 @@
                                 </div>
                                 <!-- Sort Options -->
                                 <div class="d-flex align-items-center">
-                                    <label for="sort-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Sort:</label>
+                                    <label for="sort-filter" class="form-label mb-0 text-muted me-2 d-none d-md-block" style="font-size: 0.75rem;">Sort:</label>
                                     <select class="form-select form-select-sm" id="sort-filter" name="sort-filter" style="width: auto; min-width: 120px;">
                                         <option value="date-desc" selected>Date (Newest)</option>
                                         <option value="date-asc">Date (Oldest)</option>
