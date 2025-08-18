@@ -37,6 +37,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Initial Choice Modal -->
+    <div id="choice-modal" class="choice-modal">
+        <div class="modal-backdrop">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <i class="bi bi-arrow-left-right me-2" style="color: var(--primary-color);"></i>
+                        Choose Your Experience
+                    </h3>
+                </div>
+                <div class="modal-body">
+                    <p class="choice-subtitle">Select how you'd like to use Dhanika</p>
+                    
+                    <div class="choice-options">
+                        <div class="choice-option local-option" id="local-option">
+                            <div class="option-icon">
+                                <i class="bi bi-shield-lock"></i>
+                            </div>
+                            <h4>Local Static Version</h4>
+                            <p>Perfect for privacy-conscious users</p>
+                            <ul class="option-features">
+                                <li><i class="bi bi-check-circle"></i> 100% Privacy - Data stays on your device</li>
+                                <li><i class="bi bi-check-circle"></i> Export/Import functionality</li>
+                                <li><i class="bi bi-check-circle"></i> No account required</li>
+                                <li><i class="bi bi-check-circle"></i> Offline functionality</li>
+                            </ul>
+                            <div class="option-footer">
+                                <span class="recommended-tag">Best for: One-time tracking</span>
+                            </div>
+                        </div>
+                        
+                        <div class="choice-option cloud-option" id="cloud-option">
+                            <div class="option-icon">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                            </div>
+                            <h4>Dhanika+</h4>
+                            <p>Full-featured cloud experience</p>
+                            <ul class="option-features">
+                                <li><i class="bi bi-check-circle"></i> Cross-device synchronization</li>
+                                <li><i class="bi bi-check-circle"></i> Long-term data persistence</li>
+                                <li><i class="bi bi-check-circle"></i> Advanced features & analytics</li>
+                                <li><i class="bi bi-check-circle"></i> Automatic backups</li>
+                            </ul>
+                            <div class="option-footer">
+                                <span class="recommended-tag popular">Best for: Long-term tracking</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="choice-note">
+                        <small><i class="bi bi-info-circle me-1"></i>You can always switch between versions later</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" id="continue-local">
+                        <i class="bi bi-shield-lock me-2"></i>Continue Locally
+                    </button>
+                    <button class="btn btn-primary" id="go-to-dhanika-plus">
+                        <i class="bi bi-arrow-right me-2"></i>Go to Dhanika+
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
     <header class="bg-dark text-white" role="banner">
@@ -228,7 +293,8 @@
             </div>
         </div>
 
-        <main class="container" id="main-content" role="main">
+
+    <main class="container" id="main-content" role="main">
         <!-- Top Section: New Transaction and Budget Overview Side by Side -->
         <div class="row top-section">
             <section class="col-md-6" aria-labelledby="transaction-form-heading">
@@ -362,22 +428,6 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="budget-overview-skeleton">
-                            <div class="skeleton skeleton-chart mb-3"></div>
-                            <div class="skeleton-summary-item">
-                                <div class="skeleton skeleton-text"></div>
-                                <div class="skeleton skeleton-text"></div>
-                            </div>
-                            <div class="skeleton-summary-item">
-                                <div class="skeleton skeleton-text"></div>
-                                <div class="skeleton skeleton-text"></div>
-                            </div>
-                            <div class="skeleton-summary-item">
-                                <div class="skeleton skeleton-text"></div>
-                                <div class="skeleton skeleton-text"></div>
-                            </div>
-                            <div class="skeleton skeleton-text" style="height: 40px;"></div>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -422,32 +472,6 @@
                             <small class="text-muted">Your monthly transactions will appear here.</small>
                         </div>
                         <ul id="monthly-transaction-list" class="list-group" role="list" aria-label="Monthly transaction list"></ul>
-                        <div id="monthly-transaction-list-skeleton">
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -493,32 +517,6 @@
                             <small class="text-muted">Your transactions will appear here.</small>
                         </div>
                         <ul id="transaction-list" class="list-group" role="list" aria-label="Transaction list"></ul>
-                        <div id="transaction-list-skeleton">
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                            <div class="skeleton-transaction">
-                                <div class="skeleton skeleton-transaction-icon"></div>
-                                <div class="skeleton-transaction-details">
-                                    <div class="skeleton skeleton-text"></div>
-                                    <div class="skeleton skeleton-text"></div>
-                                </div>
-                                <div class="skeleton skeleton-transaction-amount"></div>
-                            </div>
-                        </div>
                         
                         <!-- View All Transactions Button -->
                         <div class="text-center mt-4">

@@ -31,11 +31,6 @@
             justify-content: center;
         }
         
-        .skeleton-checkbox {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-        }
         
         /* Fix content hiding under sticky header on mobile */
         @media (max-width: 768px) {
@@ -81,10 +76,14 @@
                 gap: 0.5rem;
             }
             
-            .transaction-actions {
+            .transaction-actions,
+            .transaction-option {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
+                opacity: 0 !important;
+                visibility: hidden;
+                transition: all 0.2s ease-in-out;
             }
             
             .transaction-actions .btn {
@@ -94,6 +93,19 @@
                 height: 28px;
                 line-height: 1;
                 border-radius: 4px;
+            }
+            
+            /* Show transaction actions on hover, selection, or focus */
+            .list-group-item:hover .transaction-actions,
+            .list-group-item.selected .transaction-actions,
+            .list-group-item:focus-within .transaction-actions,
+            .list-group-item.touch-active .transaction-actions,
+            .list-group-item:hover .transaction-option,
+            .list-group-item.selected .transaction-option,
+            .list-group-item:focus-within .transaction-option,
+            .list-group-item.touch-active .transaction-option {
+                opacity: 1 !important;
+                visibility: visible !important;
             }
             
             .transaction-description {
@@ -132,6 +144,15 @@
                     padding: 0.1875rem 0.3125rem;
                     min-width: 24px;
                     height: 24px;
+                }
+                
+                /* Show actions on mobile touch */
+                .list-group-item:active .transaction-actions,
+                .list-group-item.mobile-selected .transaction-actions,
+                .list-group-item:active .transaction-option,
+                .list-group-item.mobile-selected .transaction-option {
+                    opacity: 1 !important;
+                    visibility: visible !important;
                 }
             }
         }
@@ -308,24 +329,6 @@
     </style>
 </head>
 <body>
-    <!-- Neon Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-content">
-            <div class="neon-logo">
-                <h1 class="neon-text">Dhanika</h1>
-                <div class="neon-subtitle">Transactions</div>
-            </div>
-            <div class="loading-spinner">
-                <div class="neon-ring"></div>
-                <div class="neon-ring-inner"></div>
-            </div>
-            <div class="loading-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </div>
     
     <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
     <header class="bg-dark text-white" role="banner">
@@ -614,49 +617,6 @@
                             </nav>
                         </div>
 
-                        <!-- Loading Skeleton -->
-                        <div id="transaction-list-skeleton">
-                            <div class="skeleton-transaction mb-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="form-check me-3">
-                                        <div class="skeleton skeleton-checkbox"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
-                                    <div class="skeleton-transaction-details flex-grow-1">
-                                        <div class="skeleton skeleton-text mb-1" style="width: 60%;"></div>
-                                        <div class="skeleton skeleton-text" style="width: 40%;"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-amount"></div>
-                                </div>
-                            </div>
-                            <!-- Repeat skeleton items -->
-                            <div class="skeleton-transaction mb-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="form-check me-3">
-                                        <div class="skeleton skeleton-checkbox"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
-                                    <div class="skeleton-transaction-details flex-grow-1">
-                                        <div class="skeleton skeleton-text mb-1" style="width: 70%;"></div>
-                                        <div class="skeleton skeleton-text" style="width: 50%;"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-amount"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton-transaction mb-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="form-check me-3">
-                                        <div class="skeleton skeleton-checkbox"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-icon me-3"></div>
-                                    <div class="skeleton-transaction-details flex-grow-1">
-                                        <div class="skeleton skeleton-text mb-1" style="width: 50%;"></div>
-                                        <div class="skeleton skeleton-text" style="width: 30%;"></div>
-                                    </div>
-                                    <div class="skeleton skeleton-transaction-amount"></div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
