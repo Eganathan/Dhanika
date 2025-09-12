@@ -4,117 +4,13 @@ class BudgetTracker {
         console.log('Initializing BudgetTracker...');
         this.setupContinuousAnimation();
         this.detectPage();
-        this.initializeChoiceDialog();
         this.initializeElements();
         this.initializeState();
         this.bindEvents();
         this.setupStorageListener();
-        this.initializeMobileMenu();
-        this.setupDebugShortcuts();
         this.initialize();
     }
 
-    initializeChoiceDialog() {
-        // Check if user has already made a choice
-        const userChoice = localStorage.getItem('dhanika-user-choice');
-        
-        if (!userChoice) {
-            // Show the choice modal
-            this.showChoiceModal();
-        } else if (userChoice === 'dhanika-plus') {
-            // If user previously chose Dhanika+, redirect immediately
-            this.redirectToDhanikaPlus();
-            return;
-        }
-        // If userChoice === 'local', continue with normal initialization
-    }
-
-    showChoiceModal() {
-        const modal = document.getElementById('choice-modal');
-        const continueLocalBtn = document.getElementById('continue-local');
-        const goToDhanikaPlusBtn = document.getElementById('go-to-dhanika-plus');
-        const localOption = document.getElementById('local-option');
-        const cloudOption = document.getElementById('cloud-option');
-
-        if (!modal) return;
-
-        // Add click handlers for option cards
-        localOption?.addEventListener('click', () => {
-            this.selectOption('local');
-        });
-
-        cloudOption?.addEventListener('click', () => {
-            this.selectOption('cloud');
-        });
-
-        // Add click handlers for buttons
-        continueLocalBtn?.addEventListener('click', () => {
-            this.chooseLocal();
-        });
-
-        goToDhanikaPlusBtn?.addEventListener('click', () => {
-            this.chooseDhanikaPlus();
-        });
-
-        // Prevent clicks on the modal content from closing the modal
-        modal.querySelector('.modal-content')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        // Show the modal
-        modal.classList.add('show');
-    }
-
-    selectOption(type) {
-        const localOption = document.getElementById('local-option');
-        const cloudOption = document.getElementById('cloud-option');
-
-        // Remove previous selections
-        localOption?.classList.remove('selected');
-        cloudOption?.classList.remove('selected');
-
-        // Add selection to chosen option
-        if (type === 'local') {
-            localOption?.classList.add('selected');
-        } else {
-            cloudOption?.classList.add('selected');
-        }
-    }
-
-    chooseLocal() {
-        // Save choice to localStorage
-        localStorage.setItem('dhanika-user-choice', 'local');
-        
-        // Hide the modal
-        this.hideChoiceModal();
-        
-        // Show a welcome message
-        setTimeout(() => {
-            this.showSnackbar('Welcome to Dhanika Local! Your data stays private on your device.', 'success');
-        }, 500);
-    }
-
-    chooseDhanikaPlus() {
-        // Save choice to localStorage
-        localStorage.setItem('dhanika-user-choice', 'dhanika-plus');
-        
-        // Redirect immediately
-        this.redirectToDhanikaPlus();
-    }
-
-    redirectToDhanikaPlus() {
-        window.location.href = 'https://dhanikaplus.eknath.dev';
-    }
-
-    hideChoiceModal() {
-        const modal = document.getElementById('choice-modal');
-        if (modal) {
-            modal.classList.add('closing');
-            setTimeout(() => {
-                modal.classList.remove('show', 'closing');
-            }, 300);
-        }
-    }
 
     showSnackbar(message, type = 'info', duration = 5000) {
         const snackbar = document.getElementById('snackbar');
@@ -148,22 +44,6 @@ class BudgetTracker {
         }, duration);
     }
 
-    // Method to reset user choice (useful for testing or if user wants to switch)
-    resetUserChoice() {
-        localStorage.removeItem('dhanika-user-choice');
-        console.log('User choice reset. Reload the page to see the choice dialog again.');
-        this.showSnackbar('Choice reset successfully. Reload the page to choose again.', 'info');
-    }
-
-    // Add keyboard shortcut to reset choice (Ctrl+Shift+R)
-    setupDebugShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'R') {
-                e.preventDefault();
-                this.resetUserChoice();
-            }
-        });
-    }
 
 
     setupContinuousAnimation() {
@@ -560,10 +440,16 @@ class BudgetTracker {
     async initialize() {
         await this.loadConfiguration();
         this.populateCategories();
-        this.showEmptyStates();
+        this.setDefaultDate();
         this.updateSummary();
         this.renderTransactions();
         this.renderMonthlyTransactions();
+        if (this.state.transactions.length === 0) {
+            this.showEmptyStates();
+        } else {
+            this.updateChart();
+            this.setupCategoryFilters();
+        }
     }
 
     async loadConfiguration() {
@@ -685,14 +571,15 @@ class BudgetTracker {
             emptyMonthlyMessage.style.display = 'block';
             monthlyTransactionList.style.display = 'none';
         }
-
-        console.log('Empty states displayed');
+    }
+    
+    setDefaultDate() {
+        const dateInput = document.getElementById('date');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
     }
 
-    initializeMobileMenu() {
-        // Mobile menu functionality - placeholder for now
-        console.log('Mobile menu initialized');
-    }
 
     bindModalEvents() {
         // Modal event binding - placeholder for now
@@ -924,7 +811,7 @@ class BudgetTracker {
         balanceEl.textContent = `${currencySymbol}${balance.toFixed(2)}`;
         
         // Add color coding for balance
-        balanceEl.className = balance >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        balanceEl.className = balance >= 0 ? 'fw-bold balance-positive' : 'fw-bold balance-negative';
 
         console.log('Summary updated:', { totalIncome, totalExpenses, balance });
     }
@@ -961,9 +848,14 @@ class BudgetTracker {
         };
 
         // Validate required fields
-        if (!transaction.amount || !transaction.description || !transaction.date || !transaction.category) {
-            this.showSnackbar('Please fill in all required fields', 'error');
+        if (!transaction.amount || !transaction.date || !transaction.category) {
+            this.showSnackbar('Please fill in all required fields (amount, date, category)', 'error');
             return;
+        }
+        
+        // Set default description if empty
+        if (!transaction.description || transaction.description.trim() === '') {
+            transaction.description = this.getCategoryLabel(transaction.category);
         }
 
         if (this.state.editingTransactionId) {
@@ -1017,19 +909,95 @@ class BudgetTracker {
     }
 
     handleFreshStart() {
-        console.log('Fresh start handled');
+        if (!confirm('Are you sure you want to clear all transactions? This action cannot be undone.')) return;
+        
+        this.state.transactions = [];
+        this.saveTransactions();
+        
+        // Clear form
+        const form = document.getElementById('transaction-form');
+        if (form) {
+            form.reset();
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // Refresh all displays
+        this.renderTransactions();
+        this.renderMonthlyTransactions();
+        this.updateChart();
+        this.updateSummary();
+        this.setupCategoryFilters();
+        
+        this.showSnackbar('Fresh start complete! All data cleared.', 'success');
     }
 
     downloadSummary() {
-        console.log('Summary download initiated');
+        const totalIncome = this.state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = this.state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const balance = totalIncome - totalExpenses;
+        
+        const summary = `DHANIKA BUDGET SUMMARY
+======================
+
+Total Income: ${this.state.currentCurrencySymbol}${totalIncome.toFixed(2)}
+Total Expenses: ${this.state.currentCurrencySymbol}${totalExpenses.toFixed(2)}
+Balance: ${this.state.currentCurrencySymbol}${balance.toFixed(2)}
+
+Generated on: ${new Date().toLocaleDateString()}
+Total Transactions: ${this.state.transactions.length}`;
+        
+        const blob = new Blob([summary], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dhanika-summary-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showSnackbar('Summary downloaded!', 'success');
     }
 
     showExportModal() {
-        console.log('Export modal shown');
+        const data = JSON.stringify(this.state.transactions, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dhanika-budget-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showSnackbar('Data exported successfully!', 'success');
     }
 
     handleFileSelect(e) {
-        console.log('File select handled');
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (Array.isArray(data) && data.length > 0) {
+                    this.state.transactions = data;
+                    this.saveTransactions();
+                    this.renderTransactions();
+                    this.renderMonthlyTransactions();
+                    this.updateChart();
+                    this.updateSummary();
+                    this.setupCategoryFilters();
+                    this.showSnackbar(`Imported ${data.length} transactions successfully!`, 'success');
+                } else {
+                    throw new Error('Invalid data format');
+                }
+            } catch (error) {
+                this.showSnackbar('Error importing data. Please check the file format.', 'error');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
     }
 
     toggleTooltips() {
@@ -1037,11 +1005,61 @@ class BudgetTracker {
     }
 
     generateAdvicePrompt() {
-        console.log('Advice prompt generated');
+        const container = document.getElementById('ai-prompt-container');
+        const output = document.getElementById('advice-prompt-output');
+        
+        if (!container || !output) return;
+        
+        const totalIncome = this.state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const totalExpenses = this.state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const balance = totalIncome - totalExpenses;
+        const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
+        
+        // Get category breakdown
+        const expenseCategories = {};
+        this.state.transactions.filter(t => t.type === 'expense').forEach(t => {
+            expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
+        });
+        
+        const topCategories = Object.entries(expenseCategories)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([cat, amt]) => `${this.getCategoryLabel(cat)}: ${this.state.currentCurrencySymbol}${amt.toFixed(2)}`)
+            .join(', ');
+        
+        const prompt = `I need personalized financial advice based on my spending data. Here are my financial details:
+
+**FINANCIAL OVERVIEW:**
+- Total Monthly Income: ${this.state.currentCurrencySymbol}${totalIncome.toFixed(2)}
+- Total Monthly Expenses: ${this.state.currentCurrencySymbol}${totalExpenses.toFixed(2)}
+- Current Balance: ${this.state.currentCurrencySymbol}${balance.toFixed(2)}
+- Savings Rate: ${savingsRate.toFixed(1)}%
+- Total Transactions: ${this.state.transactions.length}
+
+**TOP SPENDING CATEGORIES:**
+${topCategories}
+
+**QUESTIONS FOR YOU:**
+1. How can I improve my savings rate and financial health?
+2. Are there any spending categories where I should cut back?
+3. What budgeting strategies would work best for my situation?
+4. How can I optimize my income and expense allocation?
+5. Any red flags or areas of concern in my spending patterns?
+
+Please provide practical, actionable advice based on this data.`;
+        
+        output.value = prompt;
+        container.style.display = 'block';
+        this.showSnackbar('Financial advice prompt generated!', 'success');
     }
 
     copyAdvicePrompt() {
-        console.log('Advice prompt copied');
+        const output = document.getElementById('advice-prompt-output');
+        if (!output) return;
+        
+        output.select();
+        document.execCommand('copy');
+        this.showSnackbar('Prompt copied to clipboard!', 'success');
     }
 
     toggleHelpSection() {
@@ -1632,16 +1650,36 @@ class BudgetTracker {
         const showBtn = document.getElementById('show-analytics');
         
         if (dashboard && showBtn) {
+            // Check if we have enough data for analytics
+            if (this.state.transactions.length === 0) {
+                this.showSnackbar('Add some transactions to view analytics', 'info');
+                return;
+            }
+            
             dashboard.style.display = 'block';
             showBtn.style.display = 'none';
             
-            // Render all analytics charts
-            this.renderAnalyticsCharts();
-            this.updateKeyMetrics();
+            // Clear any existing empty state displays
+            this.clearEmptyChartStates();
             
-            // Scroll to dashboard
+            // Add small delay to ensure DOM is ready
             setTimeout(() => {
-                dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                try {
+                    this.renderAnalyticsCharts();
+                    this.updateKeyMetrics();
+                } catch (error) {
+                    console.error('Error rendering analytics:', error);
+                    this.showSnackbar('Error loading analytics. Please try again.', 'error');
+                    this.hideAnalyticsDashboard();
+                    return;
+                }
+                
+                // Scroll to dashboard with better positioning
+                setTimeout(() => {
+                    const yOffset = -20; // Offset to account for header
+                    const y = dashboard.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }, 200);
             }, 100);
         }
     }
@@ -1660,10 +1698,24 @@ class BudgetTracker {
     }
     
     renderAnalyticsCharts() {
-        this.renderTrendChart();
-        this.renderCategoryBreakdownChart();
-        this.renderDailyPatternChart();
-        this.renderBudgetHealthChart();
+        try {
+            // Only render charts if we have sufficient data
+            if (this.state.transactions.length === 0) {
+                this.showEmptyAnalytics();
+                return;
+            }
+            
+            // Clear any previous empty states
+            this.clearEmptyChartStates();
+            
+            this.renderTrendChart();
+            this.renderCategoryBreakdownChart();
+            this.renderDailyPatternChart();
+            this.renderBudgetHealthChart();
+        } catch (error) {
+            console.error('Error in renderAnalyticsCharts:', error);
+            throw error;
+        }
     }
     
     destroyAnalyticsCharts() {
@@ -1691,6 +1743,12 @@ class BudgetTracker {
         // Get monthly data for the last 6 months
         const monthlyData = this.getMonthlyTrendData();
         
+        // Check if we have data
+        if (monthlyData.labels.length === 0) {
+            this.showEmptyChart(canvas.parentElement, 'Not enough data for trend analysis');
+            return;
+        }
+        
         this.analyticsCharts.trend = new Chart(ctx, {
             type: 'line',
             data: {
@@ -1714,6 +1772,7 @@ class BudgetTracker {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                aspectRatio: 2,
                 plugins: {
                     legend: {
                         labels: {
@@ -1757,6 +1816,12 @@ class BudgetTracker {
         
         // Get current month expense categories
         const categoryData = this.getCurrentMonthCategoryData();
+        
+        // Check if we have category data
+        if (categoryData.labels.length === 0) {
+            this.showEmptyChart(canvas.parentElement, 'No expense categories this month');
+            return;
+        }
         
         this.analyticsCharts.categoryBreakdown = new Chart(ctx, {
             type: 'doughnut',
@@ -2060,6 +2125,80 @@ class BudgetTracker {
                 element.classList.remove('pulse-on-update');
             }, 600);
         }
+    }
+    
+    showEmptyAnalytics() {
+        const containers = ['trend-chart', 'category-breakdown-chart', 'daily-pattern-chart', 'health-score-chart'];
+        containers.forEach(id => {
+            const canvas = document.getElementById(id);
+            if (canvas) {
+                this.showEmptyChart(canvas.parentElement, 'No data available');
+            }
+        });
+    }
+    
+    showEmptyChart(container, message) {
+        if (!container) return;
+        
+        const canvas = container.querySelector('canvas');
+        if (canvas) {
+            canvas.style.display = 'none';
+        }
+        
+        let emptyDiv = container.querySelector('.empty-chart-analytics');
+        if (!emptyDiv) {
+            emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-chart-analytics';
+            container.appendChild(emptyDiv);
+        }
+        
+        emptyDiv.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-bar-chart" style="font-size: 2rem; opacity: 0.5;"></i>
+                <p class="mt-2 mb-0">${message}</p>
+            </div>
+        `;
+        emptyDiv.style.display = 'flex';
+        emptyDiv.style.justifyContent = 'center';
+        emptyDiv.style.alignItems = 'center';
+        emptyDiv.style.height = '200px';
+    }
+    
+    clearEmptyChartStates() {
+        const containers = ['trend-chart', 'category-breakdown-chart', 'daily-pattern-chart', 'health-score-chart'];
+        containers.forEach(id => {
+            const canvas = document.getElementById(id);
+            if (canvas && canvas.parentElement) {
+                const container = canvas.parentElement;
+                const emptyDiv = container.querySelector('.empty-chart-analytics');
+                if (emptyDiv) {
+                    emptyDiv.remove();
+                }
+                canvas.style.display = 'block';
+            }
+        });
+    }
+    
+    generateColors(count) {
+        const colors = [
+            'rgba(99, 102, 241, 0.8)',   // Purple
+            'rgba(16, 185, 129, 0.8)',   // Green
+            'rgba(245, 158, 11, 0.8)',   // Orange
+            'rgba(239, 68, 68, 0.8)',    // Red
+            'rgba(59, 130, 246, 0.8)',   // Blue
+            'rgba(139, 92, 246, 0.8)',   // Violet
+            'rgba(34, 197, 94, 0.8)',    // Emerald
+            'rgba(251, 113, 133, 0.8)',  // Rose
+            'rgba(14, 165, 233, 0.8)',   // Sky
+            'rgba(168, 85, 247, 0.8)'    // Purple variant
+        ];
+        
+        const backgrounds = [];
+        for (let i = 0; i < count; i++) {
+            backgrounds.push(colors[i % colors.length]);
+        }
+        
+        return { backgrounds };
     }
 }
 

@@ -38,70 +38,6 @@
         </div>
     </div>
 
-    <!-- Initial Choice Modal -->
-    <div id="choice-modal" class="choice-modal">
-        <div class="modal-backdrop">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">
-                        <i class="bi bi-arrow-left-right me-2" style="color: var(--primary-color);"></i>
-                        Choose Your Experience
-                    </h3>
-                </div>
-                <div class="modal-body">
-                    <p class="choice-subtitle">Select how you'd like to use Dhanika</p>
-                    
-                    <div class="choice-options">
-                        <div class="choice-option local-option" id="local-option">
-                            <div class="option-icon">
-                                <i class="bi bi-shield-lock"></i>
-                            </div>
-                            <h4>Local Static Version</h4>
-                            <p>Perfect for privacy-conscious users</p>
-                            <ul class="option-features">
-                                <li><i class="bi bi-check-circle"></i> 100% Privacy - Data stays on your device</li>
-                                <li><i class="bi bi-check-circle"></i> Export/Import functionality</li>
-                                <li><i class="bi bi-check-circle"></i> No account required</li>
-                                <li><i class="bi bi-check-circle"></i> Offline functionality</li>
-                            </ul>
-                            <div class="option-footer">
-                                <span class="recommended-tag">Best for: One-time tracking</span>
-                            </div>
-                        </div>
-                        
-                        <div class="choice-option cloud-option" id="cloud-option">
-                            <div class="option-icon">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                            </div>
-                            <h4>Dhanika+</h4>
-                            <p>Full-featured cloud experience</p>
-                            <ul class="option-features">
-                                <li><i class="bi bi-check-circle"></i> Cross-device synchronization</li>
-                                <li><i class="bi bi-check-circle"></i> Long-term data persistence</li>
-                                <li><i class="bi bi-check-circle"></i> Advanced features & analytics</li>
-                                <li><i class="bi bi-check-circle"></i> Automatic backups</li>
-                            </ul>
-                            <div class="option-footer">
-                                <span class="recommended-tag popular">Best for: Long-term tracking</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="choice-note">
-                        <small><i class="bi bi-info-circle me-1"></i>You can always switch between versions later</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-secondary" id="continue-local">
-                        <i class="bi bi-shield-lock me-2"></i>Continue Locally
-                    </button>
-                    <button class="btn btn-primary" id="go-to-dhanika-plus">
-                        <i class="bi bi-arrow-right me-2"></i>Go to Dhanika+
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
     <header class="bg-dark text-white" role="banner">
@@ -113,17 +49,10 @@
                             <h1 class="mb-0 animated-brand">Dhanika</h1>
                             <p class="brand-subtitle">.eknath.dev</p>
                         </a>
-                        <!-- Mobile menu toggle button (hidden by default) -->
-                        <button class="mobile-menu-toggle" aria-label="Open mobile menu">
-                            <i class="bi bi-list" aria-hidden="true"></i>
-                        </button>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0 gap-2 header-buttons">
-                        <button class="btn btn-outline-info" id="view-all-toggle" aria-label="Toggle all transactions view">
-                            <i class="bi bi-list-ul" aria-hidden="true"></i> <span id="view-toggle-text">Show All Transactions</span>
-                        </button>
                         <div class="btn-group" role="group" aria-label="Data management buttons">
                             <button class="btn btn-outline-success" id="export-btn-header" aria-label="Export your budget data as JSON file">
                                 <i class="bi bi-download" aria-hidden="true"></i> Export Data
@@ -161,140 +90,10 @@
         </div>
     </header>
 
-    <!-- Mobile Menu Overlay and Panel -->
-    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
-    <div class="mobile-menu-panel" id="mobile-menu-panel">
-        <div class="mobile-menu-header">
-            <h3 class="mobile-menu-title">📊 Dhanika</h3>
-            <button class="mobile-menu-close" aria-label="Close mobile menu">
-                <i class="bi bi-x" aria-hidden="true"></i>
-            </button>
-        </div>
-        
-        <div class="mobile-menu-items">
-            <div class="mobile-menu-item">
-                <button class="btn" id="mobile-export-btn">
-                    <i class="bi bi-download" aria-hidden="true"></i>
-                    Export Data
-                </button>
-            </div>
-            
-            <div class="mobile-menu-item">
-                <button class="btn" id="mobile-import-btn">
-                    <i class="bi bi-upload" aria-hidden="true"></i>
-                    Import Data
-                </button>
-                <input type="file" id="mobile-import-file" accept=".json" style="display: none;">
-            </div>
-            
-            <div class="mobile-menu-item">
-                <button class="btn" id="mobile-currency-btn">
-                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>
-                    Change Currency
-                </button>
-                <div class="mobile-currency-list" style="display: none; margin-top: 10px;">
-                    <a href="#" class="dropdown-item" data-currency="INR" data-symbol="₹">₹ Indian Rupee</a>
-                    <a href="#" class="dropdown-item" data-currency="USD" data-symbol="$">$ US Dollar</a>
-                    <a href="#" class="dropdown-item" data-currency="EUR" data-symbol="€">€ Euro</a>
-                    <a href="#" class="dropdown-item" data-currency="GBP" data-symbol="£">£ British Pound</a>
-                    <a href="#" class="dropdown-item" data-currency="JPY" data-symbol="¥">¥ Japanese Yen</a>
-                </div>
-            </div>
-            
-            <div class="mobile-menu-item">
-                <button class="btn" id="mobile-tooltip-btn">
-                    <i class="bi bi-question-circle" aria-hidden="true"></i>
-                    Toggle Tooltips
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Content Wrapper for responsive ordering -->
     <div class="content-wrapper">
-        <!-- How-to and Why Section -->
-        <div class="container help-section-container" style="margin-top: 2rem; margin-bottom: 2rem;">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
-                                <span>Why Use Dhanika & Quick Start Guide</span>
-                            </div>
-                            <button class="btn btn-sm btn-outline-light" id="toggle-help-section" aria-label="Toggle help section">
-                                <i class="bi bi-chevron-up" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <div class="card-body" id="help-section-content">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5 class="text-dark mb-3">
-                                        <i class="bi bi-question-circle-fill me-2" aria-hidden="true"></i>
-                                        Why Use Dhanika?
-                                    </h5>
-                                    <ul class="list-unstyled">
-                                        <li class="mb-3">
-                                            <i class="bi bi-shield-check text-success me-2" aria-hidden="true"></i>
-                                            <strong class="text-white">Privacy-First:</strong> <span class="text-light">All data stays on your device - no cloud storage</span>
-                                        </li>
-                                        <li class="mb-3">
-                                            <i class="bi bi-graph-up text-primary me-2" aria-hidden="true"></i>
-                                            <strong class="text-white">Visual Insights:</strong> <span class="text-light">See your spending patterns with interactive charts</span>
-                                        </li>
-                                        <li class="mb-3">
-                                            <i class="bi bi-currency-exchange text-warning me-2" aria-hidden="true"></i>
-                                            <strong class="text-white">Multi-Currency:</strong> <span class="text-light">Support for 11+ major world currencies</span>
-                                        </li>
-                                        <li class="mb-3">
-                                            <i class="bi bi-download text-info me-2" aria-hidden="true"></i>
-                                            <strong class="text-white">Export Ready:</strong> <span class="text-light">Download summaries and backup your data anytime</span>
-                                        </li>
-                                        <li class="mb-3">
-                                            <i class="bi bi-device-mobile text-light me-2" aria-hidden="true"></i>
-                                            <strong class="text-white">Mobile Friendly:</strong> <span class="text-light">Works perfectly on all devices</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5 class="text-white mb-3">
-                                        <i class="bi bi-play-circle-fill me-2" aria-hidden="true"></i>
-                                        Quick Start Guide
-                                    </h5>
-                                    <ol class="help-guide-list">
-                                        <li class="help-guide-item mb-3">
-                                            <strong class="text-white d-block">1. Add Your First Transaction</strong>
-                                            <small class="text-light">Use the form on the left to record income or expenses</small>
-                                        </li>
-                                        <li class="help-guide-item mb-3">
-                                            <strong class="text-white d-block">2. Choose Categories</strong>
-                                            <small class="text-light">Organize transactions by type (Food, Transport, Salary, etc.)</small>
-                                        </li>
-                                        <li class="help-guide-item mb-3">
-                                            <strong class="text-white d-block">3. View Your Budget</strong>
-                                            <small class="text-light">Charts update automatically to show spending patterns</small>
-                                        </li>
-                                        <li class="help-guide-item mb-3">
-                                            <strong class="text-white d-block">4. Track & Export</strong>
-                                            <small class="text-light">Monitor your balance and download reports as needed</small>
-                                        </li>
-                                    </ol>
-                                    <div class="mt-3 p-3 bg-dark bg-opacity-25 rounded">
-                                        <small class="text-white">
-                                            <i class="bi bi-lightbulb text-warning me-2" aria-hidden="true"></i>
-                                            <strong>Pro Tip:</strong> Use tags to add extra context to transactions for better tracking!
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-    <main class="container" id="main-content" role="main">
+    <main class="container main-content" id="main-content" role="main">
         <!-- Top Section: New Transaction and Budget Overview Side by Side -->
         <div class="row top-section">
             <section class="col-md-6" aria-labelledby="transaction-form-heading">
@@ -325,8 +124,8 @@
                             </div>
                             <div class="mb-3">
                                 <label for="description" class="form-label visually-hidden">Transaction Description</label>
-                                <input type="text" class="form-control" id="description" name="description" placeholder="Description" required aria-describedby="description-help">
-                                <div id="description-help" class="visually-hidden">Enter a brief description of the transaction</div>
+                                <input type="text" class="form-control" id="description" name="description" placeholder="Description (optional)" aria-describedby="description-help">
+                                <div id="description-help" class="visually-hidden">Enter a brief description of the transaction (optional)</div>
                             </div>
                             <div class="mb-3">
                                 <label for="date" class="form-label visually-hidden">Transaction Date</label>
@@ -720,6 +519,15 @@
                 </button>
             </div>
         </div>
+        
+        <!-- All Transactions Toggle Button -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button class="btn btn-primary btn-lg" id="view-all-toggle">
+                    <i class="bi bi-list-ul me-2"></i><span id="view-toggle-text">View All Transactions</span>
+                </button>
+            </div>
+        </div>
 
         <!-- AI Prompt Generator Section -->
         <div class="row mt-4">
@@ -819,20 +627,146 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white mt-5 py-4" role="contentinfo">
-        <div class="container text-center">
-            <div class="mb-3">
-                <a href="https://forms.gle/CjEv1mxojjrpczJY7" target="_blank" class="text-white text-decoration-none">Share Feedback</a>
+    <!-- Enhanced Footer -->
+    <footer class="modern-footer" role="contentinfo">
+        <div class="container">
+            <!-- Main Footer Content -->
+            <div class="row g-4">
+                <!-- Quick Start Guide -->
+                <div class="col-lg-4">
+                    <div class="footer-section">
+                        <h5 class="footer-title">
+                            <i class="bi bi-rocket-takeoff me-2"></i>
+                            Quick Start Guide
+                        </h5>
+                        <div class="footer-steps">
+                            <div class="step-item">
+                                <span class="step-number">1</span>
+                                <div class="step-content">
+                                    <strong>Add Transaction</strong>
+                                    <small>Enter amount, pick category, add description (optional)</small>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <span class="step-number">2</span>
+                                <div class="step-content">
+                                    <strong>View Charts</strong>
+                                    <small>See your spending patterns with interactive visualizations</small>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <span class="step-number">3</span>
+                                <div class="step-content">
+                                    <strong>Track & Export</strong>
+                                    <small>Monitor balance, export data, analyze trends</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Features & Benefits -->
+                <div class="col-lg-4">
+                    <div class="footer-section">
+                        <h5 class="footer-title">
+                            <i class="bi bi-stars me-2"></i>
+                            Key Features
+                        </h5>
+                        <ul class="feature-list">
+                            <li><i class="bi bi-shield-lock"></i> <strong>100% Private:</strong> Data stays on your device</li>
+                            <li><i class="bi bi-graph-up"></i> <strong>Smart Analytics:</strong> Advanced spending insights</li>
+                            <li><i class="bi bi-currency-exchange"></i> <strong>Multi-Currency:</strong> 7+ major currencies supported</li>
+                            <li><i class="bi bi-download"></i> <strong>Export Ready:</strong> JSON backup & text summaries</li>
+                            <li><i class="bi bi-phone"></i> <strong>Mobile First:</strong> Works perfectly on all devices</li>
+                            <li><i class="bi bi-speedometer2"></i> <strong>Lightning Fast:</strong> No loading, instant responses</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Tips & Tricks -->
+                <div class="col-lg-4">
+                    <div class="footer-section">
+                        <h5 class="footer-title">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            Pro Tips
+                        </h5>
+                        <div class="tips-list">
+                            <div class="tip-item">
+                                <i class="bi bi-tags"></i>
+                                <div>
+                                    <strong>Use Tags:</strong> Add tags like "work lunch", "birthday gift" for better tracking
+                                </div>
+                            </div>
+                            <div class="tip-item">
+                                <i class="bi bi-calendar-check"></i>
+                                <div>
+                                    <strong>Regular Updates:</strong> Log transactions daily for accurate insights
+                                </div>
+                            </div>
+                            <div class="tip-item">
+                                <i class="bi bi-pie-chart"></i>
+                                <div>
+                                    <strong>Categories Matter:</strong> Proper categorization improves analytics
+                                </div>
+                            </div>
+                            <div class="tip-item">
+                                <i class="bi bi-cloud-download"></i>
+                                <div>
+                                    <strong>Backup Regularly:</strong> Export your data weekly as backup
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mb-3">
-                <small class="text-muted d-block lh-base">
-                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-                    Your financial data remains private and is stored locally on your device.
-                </small>
+            
+            <!-- Privacy & Tech Info -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="footer-highlight">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-shield-check privacy-icon me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Privacy-First Design</h6>
+                                        <p class="mb-0 small">Your financial data never leaves your device. No accounts, no cloud storage, no tracking. Built with modern web technologies for maximum privacy and performance.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <div class="tech-badges">
+                                    <span class="tech-badge">HTML5</span>
+                                    <span class="tech-badge">CSS3</span>
+                                    <span class="tech-badge">JavaScript</span>
+                                    <span class="tech-badge">Chart.js</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <small class="text-muted">&copy; 2025 <a href="https://dhanika.eknath.dev">Dhanika<a>. 100% vibe coded project.</small>
+            
+            <!-- Bottom Footer -->
+            <div class="row mt-4 pt-4 border-top">
+                <div class="col-md-6">
+                    <p class="mb-0 small text-muted">
+                        &copy; 2025 <strong>Dhanika</strong> • Built with ❤️ for privacy-conscious users
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="footer-links">
+                        <a href="https://forms.gle/CjEv1mxojjrpczJY7" target="_blank" class="footer-link">
+                            <i class="bi bi-chat-dots"></i> Share Feedback
+                        </a>
+                        <a href="mailto:hello@eknath.dev" class="footer-link">
+                            <i class="bi bi-envelope"></i> Contact
+                        </a>
+                        <a href="https://eknath.dev" target="_blank" class="footer-link">
+                            <i class="bi bi-globe"></i> More Projects
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
@@ -841,10 +775,6 @@
     <!-- Snackbar for notifications -->
     <div id="snackbar" class="snackbar" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
