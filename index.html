@@ -121,9 +121,9 @@
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0 gap-2 header-buttons">
-                        <a href="transactions/" class="btn btn-outline-info" aria-label="View all transactions">
-                            <i class="bi bi-list-ul" aria-hidden="true"></i> All Transactions
-                        </a>
+                        <button class="btn btn-outline-info" id="view-all-toggle" aria-label="Toggle all transactions view">
+                            <i class="bi bi-list-ul" aria-hidden="true"></i> <span id="view-toggle-text">Show All Transactions</span>
+                        </button>
                         <div class="btn-group" role="group" aria-label="Data management buttons">
                             <button class="btn btn-outline-success" id="export-btn-header" aria-label="Export your budget data as JSON file">
                                 <i class="bi bi-download" aria-hidden="true"></i> Export Data
@@ -478,14 +478,14 @@
         </div>
 
         <!-- All Transactions Section -->
-        <div class="row mt-4">
+        <div class="row mt-4" id="all-transactions-section" style="display: none;">
             <section class="col-12" aria-labelledby="transactions-heading">
                 <div class="card transactions-card">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                             <div>
-                                <h2 class="card-title mb-0" id="transactions-heading">Top 10 High Value Transactions</h2>
-                                <small class="text-muted">Showing highest amount transactions • <a href="transactions/" class="text-decoration-none">View all transactions</a></small>
+                                <h2 class="card-title mb-0" id="transactions-heading">All Transactions</h2>
+                                <small class="text-muted">Complete transaction history with advanced filtering</small>
                             </div>
                             <div class="btn-group" role="radiogroup" aria-label="Filter transactions">
                                 <input type="radio" class="btn-check" name="filter" id="all-transactions" value="all" checked>
@@ -497,37 +497,228 @@
                             </div>
                         </div>
                         
-                        <!-- Search and Category Filters -->
+                        <!-- Advanced Filters -->
                         <div class="mb-3">
                             <div class="row g-2">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <small class="text-muted mb-2 d-block">Search transactions:</small>
                                     <input type="text" id="transaction-search" class="form-control form-control-sm" 
                                            placeholder="Search by description or tags..." aria-label="Search transactions">
                                 </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted mb-2 d-block">Filter by category:</small>
-                                    <div id="category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Category filters"></div>
+                                <div class="col-md-3">
+                                    <small class="text-muted mb-2 d-block">Sort by:</small>
+                                    <select class="form-select form-select-sm" id="sort-filter">
+                                        <option value="date-desc">Date (Newest)</option>
+                                        <option value="date-asc">Date (Oldest)</option>
+                                        <option value="amount-desc">Amount (High to Low)</option>
+                                        <option value="amount-asc">Amount (Low to High)</option>
+                                        <option value="description">Description (A-Z)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted mb-2 d-block">Time period:</small>
+                                    <select class="form-select form-select-sm" id="all-time-filter">
+                                        <option value="all">All Time</option>
+                                        <option value="this-month">This Month</option>
+                                        <option value="last-month">Last Month</option>
+                                        <option value="last-3-months">Last 3 Months</option>
+                                        <option value="this-year">This Year</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted mb-2 d-block">Actions:</small>
+                                    <button class="btn btn-outline-warning btn-sm w-100" id="clear-all-filters">
+                                        <i class="bi bi-arrow-clockwise"></i> Clear
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Category Filters -->
+                        <div class="mb-3">
+                            <small class="text-muted mb-2 d-block">Filter by category:</small>
+                            <div id="category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Category filters"></div>
+                        </div>
+                        
+                        <!-- Bulk Actions -->
+                        <div id="bulk-actions" class="mb-3" style="display: none;">
+                            <div class="d-flex align-items-center gap-2 p-2 bg-primary bg-opacity-10 rounded">
+                                <span id="selected-count" class="text-muted small">0 selected</span>
+                                <button class="btn btn-sm btn-outline-danger" id="bulk-delete">
+                                    <i class="bi bi-trash"></i> Delete Selected
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="clear-selection">
+                                    Clear Selection
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Transaction Count and Pagination Info -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span id="showing-info" class="text-muted small">Showing all transactions</span>
+                            </div>
+                            <div>
+                                <span id="transaction-count" class="badge bg-secondary">0 transactions</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Select All Checkbox -->
+                        <div class="mb-2" id="list-header" style="display: none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="select-all">
+                                <label class="form-check-label small text-muted" for="select-all">
+                                    Select all visible transactions
+                                </label>
+                            </div>
+                        </div>
+                        
                         <div id="empty-transaction-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
                             <i class="bi bi-card-list" aria-hidden="true"></i>
-                            <p>No Transactions</p>
-                            <small class="text-muted">Your transactions will appear here.</small>
+                            <p>No Transactions Found</p>
+                            <small class="text-muted">Try adjusting your search or filters.</small>
                         </div>
                         <ul id="transaction-list" class="list-group" role="list" aria-label="Transaction list"></ul>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Advanced Analytics Dashboard -->
+        <div class="row mt-4" id="analytics-dashboard" style="display: none;">
+            <section class="col-12" aria-labelledby="analytics-heading">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h2 class="card-title mb-0" id="analytics-heading">
+                                    <i class="bi bi-graph-up me-2"></i>Advanced Analytics
+                                </h2>
+                                <p class="text-muted mb-0">Deep insights into your spending patterns and trends</p>
+                            </div>
+                            <button class="btn btn-outline-secondary" id="hide-analytics">
+                                <i class="bi bi-x"></i> Hide
+                            </button>
+                        </div>
                         
-                        <!-- View All Transactions Button -->
-                        <div class="text-center mt-4">
-                            <a href="transactions/" class="btn btn-outline-primary">
-                                <i class="bi bi-list-ul me-2" aria-hidden="true"></i>
-                                View All Transactions
-                            </a>
+                        <!-- Analytics Charts Grid -->
+                        <div class="row g-4">
+                            <!-- Monthly Trend Chart -->
+                            <div class="col-lg-8">
+                                <div class="card bg-dark border-secondary">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-graph-up-arrow me-2"></i>Monthly Spending Trends
+                                        </h5>
+                                        <small class="text-muted">Income vs Expenses over time</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="trend-chart" style="height: 300px;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Category Breakdown -->
+                            <div class="col-lg-4">
+                                <div class="card bg-dark border-secondary">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-pie-chart me-2"></i>Top Categories
+                                        </h5>
+                                        <small class="text-muted">This month's breakdown</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="category-breakdown-chart" style="height: 300px;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Key Metrics Row -->
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-3">
+                                <div class="card bg-gradient-primary text-white">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-calendar-month fs-2 mb-2"></i>
+                                        <h3 class="mb-0" id="avg-monthly-spending">₹0</h3>
+                                        <small>Avg Monthly Spending</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-gradient-success text-white">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-piggy-bank fs-2 mb-2"></i>
+                                        <h3 class="mb-0" id="savings-rate">0%</h3>
+                                        <small>Savings Rate</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-gradient-warning text-white">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-arrow-up-right fs-2 mb-2"></i>
+                                        <h3 class="mb-0" id="highest-expense">₹0</h3>
+                                        <small>Highest Single Expense</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-gradient-info text-white">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-receipt fs-2 mb-2"></i>
+                                        <h3 class="mb-0" id="total-transactions">0</h3>
+                                        <small>Total Transactions</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Spending Pattern Analysis -->
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-6">
+                                <div class="card bg-dark border-secondary">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-bar-chart me-2"></i>Daily Spending Pattern
+                                        </h5>
+                                        <small class="text-muted">Average spending by day of week</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="daily-pattern-chart" style="height: 250px;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-dark border-secondary">
+                                    <div class="card-header bg-transparent">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-speedometer2 me-2"></i>Budget Health Score
+                                        </h5>
+                                        <small class="text-muted">Financial wellness indicator</small>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <canvas id="health-score-chart" style="height: 200px;"></canvas>
+                                        <div class="mt-3">
+                                            <h3 id="budget-health-score" class="text-primary">85</h3>
+                                            <p id="health-score-description" class="text-muted mb-0">Good financial health</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
+        </div>
+        
+        <!-- Show Analytics Button -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button class="btn btn-outline-primary btn-lg" id="show-analytics">
+                    <i class="bi bi-graph-up me-2"></i>Show Advanced Analytics
+                </button>
+            </div>
         </div>
 
         <!-- AI Prompt Generator Section -->
