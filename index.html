@@ -3,843 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dhanika - A modern, privacy-focused personal budget tracker and expense manager">
-    <meta name="keywords" content="budget tracker, expense manager, personal finance, money management">
-    <meta name="author" content="Dhanika">
+    <meta name="description" content="Simple monthly budget tracker - track your income and expenses effortlessly">
     <meta name="theme-color" content="#0f172a">
-    <meta name="msapplication-navbutton-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Dhanika - Personal Budget Planner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Dhanika</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 </head>
 <body>
-    <!-- Neon Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-content">
-            <div class="neon-logo">
-                <h1 class="neon-text">Dhanika</h1>
-                <div class="neon-subtitle">Personal Budget Planner</div>
-            </div>
-            <div class="loading-spinner">
-                <div class="neon-ring"></div>
-                <div class="neon-ring-inner"></div>
-            </div>
-            <div class="loading-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </div>
-
-    
-    <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute" style="top: 10px; left: 10px; z-index: 9999;">Skip to main content</a>
-    <header class="bg-dark text-white" role="banner">
+    <!-- Header -->
+    <header>
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="/" class="brand-container text-decoration-none">
-                            <h1 class="mb-0 animated-brand">Dhanika</h1>
-                            <p class="brand-subtitle">.eknath.dev</p>
-                        </a>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0 gap-2 header-buttons">
-                        <div class="btn-group" role="group" aria-label="Data management buttons">
-                            <button class="btn btn-outline-success" id="export-btn-header" aria-label="Export your budget data as JSON file">
-                                <i class="bi bi-download" aria-hidden="true"></i> Export Data
-                            </button>
-                            <label class="btn btn-outline-warning mb-0" for="import-file-header" aria-label="Import budget data from JSON file">
-                                <i class="bi bi-upload" aria-hidden="true"></i> Import Data
-                            </label>
-                            <input type="file" id="import-file-header" accept=".json" style="display: none;" aria-label="Select JSON file to import">
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="currency-selector" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select currency">
-                                <i class="bi bi-currency-exchange me-1" aria-hidden="true"></i>
-                                <span id="current-currency">₹ INR</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="currency-selector">
-                                <li><a class="dropdown-item" href="#" data-currency="INR" data-symbol="₹">₹ Indian Rupee (INR)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="USD" data-symbol="$">$ US Dollar (USD)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="EUR" data-symbol="€">€ Euro (EUR)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="GBP" data-symbol="£">£ British Pound (GBP)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="JPY" data-symbol="¥">¥ Japanese Yen (JPY)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="SAR" data-symbol="SAR">ر.س Saudi Riyal (SAR)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="AED" data-symbol="AED">د.إ UAE Dirham (AED)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="CHF" data-symbol="CHF">Fr Swiss Franc (CHF)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="CNY" data-symbol="¥">¥ Chinese Yuan (CNY)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="CAD" data-symbol="C$">C$ Canadian Dollar (CAD)</a></li>
-                                <li><a class="dropdown-item" href="#" data-currency="AUD" data-symbol="A$">A$ Australian Dollar (AUD)</a></li>
-                            </ul>
-                        </div>
-                        <button class="btn btn-outline-info" id="tooltip-toggle" title="Toggle helpful tooltips on/off" aria-label="Toggle helpful tooltips">
-                            <i class="bi bi-question-circle" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <h1 class="brand">Dhanika</h1>
+            <p class="tagline">Track This Month's Money</p>
         </div>
     </header>
 
-
-    <!-- Content Wrapper for responsive ordering -->
-    <div class="content-wrapper">
-    <main class="container main-content" id="main-content" role="main">
-        <!-- Top Section: New Transaction and Budget Overview Side by Side -->
-        <div class="row top-section">
-            <section class="col-md-6" aria-labelledby="transaction-form-heading">
-                <div class="card card-form">
-                    <div class="card-body">
-                        <h2 class="card-title" id="transaction-form-heading">New Transaction</h2>
-                        <form id="transaction-form" role="form" aria-label="Add new transaction">
-                            <input type="hidden" id="transaction-id">
-                            <fieldset class="mb-3 type-selector">
-                                <legend class="visually-hidden">Transaction Type</legend>
-                                <div class="btn-group w-100" role="radiogroup" aria-label="Select transaction type">
-                                    <input type="radio" class="btn-check" name="type" id="income" value="income" checked aria-describedby="income-help">
-                                    <label class="btn btn-outline-success" for="income">
-                                        <i class="bi bi-arrow-up" aria-hidden="true"></i> Income
-                                    </label>
-                                    <input type="radio" class="btn-check" name="type" id="expense" value="expense" aria-describedby="expense-help">
-                                    <label class="btn btn-outline-danger" for="expense">
-                                        <i class="bi bi-arrow-down" aria-hidden="true"></i> Expense
-                                    </label>
-                                </div>
-                                <div id="income-help" class="visually-hidden">Select this for money coming in</div>
-                                <div id="expense-help" class="visually-hidden">Select this for money going out</div>
-                            </fieldset>
-                            <div class="mb-3">
-                                <label for="amount" class="form-label visually-hidden">Amount</label>
-                                <input type="number" class="form-control" id="amount" name="amount" placeholder="Amount (e.g., 1500.75)" required step="0.01" min="0.01" aria-describedby="amount-help">
-                                <div id="amount-help" class="visually-hidden">Enter the transaction amount in your selected currency</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="description" class="form-label visually-hidden">Transaction Description</label>
-                                <input type="text" class="form-control" id="description" name="description" placeholder="Description (optional)" aria-describedby="description-help">
-                                <div id="description-help" class="visually-hidden">Enter a brief description of the transaction (optional)</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="date" class="form-label visually-hidden">Transaction Date</label>
-                                <div class="date-tags-header">
-                                    <div class="date-quick-tags"></div>
-                                    <button type="button" id="clear-date-btn" class="clear-date-btn" title="Reset to today">
-                                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                                <input type="date" class="form-control" id="date" name="date" required aria-describedby="date-help">
-                                <div id="date-help" class="visually-hidden">Select the date when this transaction occurred</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="category" class="form-label visually-hidden">Category</label>
-                                <select class="form-select" id="category" name="category" required aria-describedby="category-help">
-                                    <option value="">Select Category</option>
-                                </select>
-                                <div id="category-help" class="visually-hidden">Choose a category to help organize your transactions</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="tags" class="form-label visually-hidden">Tags (Optional)</label>
-                                <div class="tags-header">
-                                    <div id="tags-chips" class="tags-chips"></div>
-                                    <button type="button" id="clear-tags-btn" class="clear-tags-btn" title="Clear all tags">
-                                        <i class="bi bi-x-circle" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                                <div class="tags-input-container">
-                                    <input type="text" class="form-control" id="tags" name="tags" placeholder="Tags (optional)" aria-describedby="tags-help" autocomplete="off">
-                                    <div id="tags-suggestions" class="tags-suggestions"></div>
-                                </div>
-                                <div id="tags-help" class="visually-hidden">Add optional tags separated by commas for better organization</div>
-                            </div>
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Save Transaction</button>
-                                <button type="button" class="btn btn-secondary" id="cancel-edit" style="display: none;">Cancel Edit</button>
-                                <button type="button" class="btn btn-outline-warning" id="fresh-start-btn">
-                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Fresh Start
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Summary Cards -->
+        <section class="summary-section">
+            <div class="summary-card income-card">
+                <div class="summary-icon">
+                    <i class="bi bi-arrow-up-circle"></i>
                 </div>
-            </section>
-            
-            <section class="col-md-6" aria-labelledby="budget-overview-heading">
-                <div class="card chart-container">
-                    <div class="card-body">
-                        <h2 class="card-title" id="budget-overview-heading">Budget Overview</h2>
-                        <div class="chart-filter mb-2">
-                            <div class="d-flex justify-content-end align-items-center">
-                                <label for="time-filter" class="form-label mb-0 text-muted me-2" style="font-size: 0.75rem;">Period:</label>
-                                <select class="form-select" id="time-filter" name="time-filter" style="width: auto; min-width: 100px; font-size: 0.75rem; padding: 0.125rem 0.5rem; height: 24px;">
-                                    <option value="this-month" selected>This Month</option>
-                                    <option value="all">All Time</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="chart-tabs mb-3">
-                            <div class="btn-group w-100" role="radiogroup" aria-label="Select chart type">
-                                <input type="radio" class="btn-check" name="chart-type" id="overview-chart" value="overview" checked aria-describedby="overview-help">
-                                <label class="btn btn-outline-primary" for="overview-chart">Overview</label>
-                                <input type="radio" class="btn-check" name="chart-type" id="category-chart" value="category" aria-describedby="category-chart-help">
-                                <label class="btn btn-outline-primary" for="category-chart">Categories</label>
-                            </div>
-                            <div id="category-subtype-selector" class="mt-2" style="display: none !important; justify-content: flex-end;">
-                                <div class="btn-group" role="radiogroup" aria-label="Category sub-type selector" style="font-size: 0.75rem;">
-                                    <input type="radio" class="btn-check" name="category-subtype" id="expense-categories" value="expense" checked>
-                                    <label class="btn btn-outline-danger" for="expense-categories" style="padding: 0.375rem 1rem; font-size: 0.75rem;">Expenses</label>
-                                    <input type="radio" class="btn-check" name="category-subtype" id="income-categories" value="income">
-                                    <label class="btn btn-outline-success" for="income-categories" style="padding: 0.375rem 1rem; font-size: 0.75rem;">Income</label>
-                                </div>
-                            </div>
-                            <div id="overview-help" class="visually-hidden">Shows total income vs expenses overview</div>
-                            <div id="category-chart-help" class="visually-hidden">Shows breakdown by category with income/expense sub-types</div>
-                        </div>
-                        <div id="empty-chart-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
-                            <i class="bi bi-pie-chart" aria-hidden="true"></i>
-                            <p>No Data to Display</p>
-                            <small class="text-muted">Add a transaction to see your budget overview.</small>
-                        </div>
-                        <div id="budget-overview-content">
-                            <canvas id="budget-chart" role="img" aria-label="Budget overview chart"></canvas>
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="fw-bold">Total Income:</span>
-                                    <span class="text-success fw-bold" id="total-income">₹0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="fw-bold">Total Expenses:</span>
-                                    <span class="text-danger fw-bold" id="total-expenses">₹0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3 border-top pt-2">
-                                    <span class="fw-bold">Balance:</span>
-                                    <span class="fw-bold" id="balance">₹0.00</span>
-                                </div>
-                                <button class="btn btn-info w-100" id="download-btn" aria-label="Download PDF summary of your budget">
-                                    <i class="bi bi-download" aria-hidden="true"></i> Download Summary
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="summary-content">
+                    <p class="summary-label">Income</p>
+                    <p class="summary-value" id="total-income">₹0</p>
                 </div>
-            </section>
-        </div>
-
-        <!-- Divider -->
-        <hr class="section-divider">
-        <!-- Monthly Transactions Section -->
-        <div class="row" style="margin-top: 0;">
-            <section class="col-12" aria-labelledby="monthly-transactions-heading">
-                <div class="card transactions-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2 class="card-title mb-0" id="monthly-transactions-heading">Transactions This Month</h2>
-                            <div class="btn-group" role="radiogroup" aria-label="Filter monthly transactions">
-                                <input type="radio" class="btn-check" name="monthly-filter" id="all-monthly-transactions" value="all" checked>
-                                <label class="btn btn-outline-secondary btn-sm" for="all-monthly-transactions">All</label>
-                                <input type="radio" class="btn-check" name="monthly-filter" id="monthly-income-filter" value="income">
-                                <label class="btn btn-outline-success btn-sm" for="monthly-income-filter">Income</label>
-                                <input type="radio" class="btn-check" name="monthly-filter" id="monthly-expense-filter" value="expense">
-                                <label class="btn btn-outline-danger btn-sm" for="monthly-expense-filter">Expenses</label>
-                            </div>
-                        </div>
-                        
-                        <!-- Search and Category Filters for Monthly -->
-                        <div class="mb-3">
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <small class="text-muted mb-2 d-block">Search this month transactions:</small>
-                                    <input type="text" id="monthly-transaction-search" class="form-control form-control-sm" 
-                                           placeholder="Search by description or tags..." aria-label="Search this month transactions">
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted mb-2 d-block">Filter by category:</small>
-                                    <div id="monthly-category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Monthly category filters"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="empty-monthly-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
-                            <i class="bi bi-calendar-month" aria-hidden="true"></i>
-                            <p>No Transactions This Month</p>
-                            <small class="text-muted">Your monthly transactions will appear here.</small>
-                        </div>
-                        <ul id="monthly-transaction-list" class="list-group" role="list" aria-label="Monthly transaction list"></ul>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- All Transactions Section -->
-        <div class="row mt-4" id="all-transactions-section" style="display: none;">
-            <section class="col-12" aria-labelledby="transactions-heading">
-                <div class="card transactions-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                            <div>
-                                <h2 class="card-title mb-0" id="transactions-heading">All Transactions</h2>
-                                <small class="text-muted">Complete transaction history with advanced filtering</small>
-                            </div>
-                            <div class="btn-group" role="radiogroup" aria-label="Filter transactions">
-                                <input type="radio" class="btn-check" name="filter" id="all-transactions" value="all" checked>
-                                <label class="btn btn-outline-secondary btn-sm" for="all-transactions">All</label>
-                                <input type="radio" class="btn-check" name="filter" id="income-filter" value="income">
-                                <label class="btn btn-outline-success btn-sm" for="income-filter">Income</label>
-                                <input type="radio" class="btn-check" name="filter" id="expense-filter" value="expense">
-                                <label class="btn btn-outline-danger btn-sm" for="expense-filter">Expenses</label>
-                            </div>
-                        </div>
-                        
-                        <!-- Advanced Filters -->
-                        <div class="mb-3">
-                            <div class="row g-2">
-                                <div class="col-md-4">
-                                    <small class="text-muted mb-2 d-block">Search transactions:</small>
-                                    <input type="text" id="transaction-search" class="form-control form-control-sm" 
-                                           placeholder="Search by description or tags..." aria-label="Search transactions">
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted mb-2 d-block">Sort by:</small>
-                                    <select class="form-select form-select-sm" id="sort-filter">
-                                        <option value="date-desc">Date (Newest)</option>
-                                        <option value="date-asc">Date (Oldest)</option>
-                                        <option value="amount-desc">Amount (High to Low)</option>
-                                        <option value="amount-asc">Amount (Low to High)</option>
-                                        <option value="description">Description (A-Z)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted mb-2 d-block">Time period:</small>
-                                    <select class="form-select form-select-sm" id="all-time-filter">
-                                        <option value="all">All Time</option>
-                                        <option value="this-month">This Month</option>
-                                        <option value="last-month">Last Month</option>
-                                        <option value="last-3-months">Last 3 Months</option>
-                                        <option value="this-year">This Year</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <small class="text-muted mb-2 d-block">Actions:</small>
-                                    <button class="btn btn-outline-warning btn-sm w-100" id="clear-all-filters">
-                                        <i class="bi bi-arrow-clockwise"></i> Clear
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Category Filters -->
-                        <div class="mb-3">
-                            <small class="text-muted mb-2 d-block">Filter by category:</small>
-                            <div id="category-filters" class="d-flex flex-wrap gap-2" role="group" aria-label="Category filters"></div>
-                        </div>
-                        
-                        <!-- Bulk Actions -->
-                        <div id="bulk-actions" class="mb-3" style="display: none;">
-                            <div class="d-flex align-items-center gap-2 p-2 bg-primary bg-opacity-10 rounded">
-                                <span id="selected-count" class="text-muted small">0 selected</span>
-                                <button class="btn btn-sm btn-outline-danger" id="bulk-delete">
-                                    <i class="bi bi-trash"></i> Delete Selected
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary" id="clear-selection">
-                                    Clear Selection
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Transaction Count and Pagination Info -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <span id="showing-info" class="text-muted small">Showing all transactions</span>
-                            </div>
-                            <div>
-                                <span id="transaction-count" class="badge bg-secondary">0 transactions</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Select All Checkbox -->
-                        <div class="mb-2" id="list-header" style="display: none;">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="select-all">
-                                <label class="form-check-label small text-muted" for="select-all">
-                                    Select all visible transactions
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div id="empty-transaction-message" class="empty-state" style="display: none;" role="status" aria-live="polite">
-                            <i class="bi bi-card-list" aria-hidden="true"></i>
-                            <p>No Transactions Found</p>
-                            <small class="text-muted">Try adjusting your search or filters.</small>
-                        </div>
-                        <ul id="transaction-list" class="list-group" role="list" aria-label="Transaction list"></ul>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Advanced Analytics Dashboard -->
-        <div class="row mt-4" id="analytics-dashboard" style="display: none;">
-            <section class="col-12" aria-labelledby="analytics-heading">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h2 class="card-title mb-0" id="analytics-heading">
-                                    <i class="bi bi-graph-up me-2"></i>Advanced Analytics
-                                </h2>
-                                <p class="text-muted mb-0">Deep insights into your spending patterns and trends</p>
-                            </div>
-                            <button class="btn btn-outline-secondary" id="hide-analytics">
-                                <i class="bi bi-x"></i> Hide
-                            </button>
-                        </div>
-                        
-                        <!-- Analytics Charts Grid -->
-                        <div class="row g-4">
-                            <!-- Monthly Trend Chart -->
-                            <div class="col-lg-8">
-                                <div class="card bg-dark border-secondary">
-                                    <div class="card-header bg-transparent">
-                                        <h5 class="mb-0">
-                                            <i class="bi bi-graph-up-arrow me-2"></i>Monthly Spending Trends
-                                        </h5>
-                                        <small class="text-muted">Income vs Expenses over time</small>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="trend-chart" style="height: 300px;"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Category Breakdown -->
-                            <div class="col-lg-4">
-                                <div class="card bg-dark border-secondary">
-                                    <div class="card-header bg-transparent">
-                                        <h5 class="mb-0">
-                                            <i class="bi bi-pie-chart me-2"></i>Top Categories
-                                        </h5>
-                                        <small class="text-muted">This month's breakdown</small>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="category-breakdown-chart" style="height: 300px;"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Key Metrics Row -->
-                        <div class="row g-4 mt-2">
-                            <div class="col-md-3">
-                                <div class="card bg-gradient-primary text-white">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-calendar-month fs-2 mb-2"></i>
-                                        <h3 class="mb-0" id="avg-monthly-spending">₹0</h3>
-                                        <small>Avg Monthly Spending</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-gradient-success text-white">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-piggy-bank fs-2 mb-2"></i>
-                                        <h3 class="mb-0" id="savings-rate">0%</h3>
-                                        <small>Savings Rate</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-gradient-warning text-white">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-arrow-up-right fs-2 mb-2"></i>
-                                        <h3 class="mb-0" id="highest-expense">₹0</h3>
-                                        <small>Highest Single Expense</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card bg-gradient-info text-white">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-receipt fs-2 mb-2"></i>
-                                        <h3 class="mb-0" id="total-transactions">0</h3>
-                                        <small>Total Transactions</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Spending Pattern Analysis -->
-                        <div class="row g-4 mt-2">
-                            <div class="col-md-6">
-                                <div class="card bg-dark border-secondary">
-                                    <div class="card-header bg-transparent">
-                                        <h5 class="mb-0">
-                                            <i class="bi bi-bar-chart me-2"></i>Daily Spending Pattern
-                                        </h5>
-                                        <small class="text-muted">Average spending by day of week</small>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="daily-pattern-chart" style="height: 250px;"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card bg-dark border-secondary">
-                                    <div class="card-header bg-transparent">
-                                        <h5 class="mb-0">
-                                            <i class="bi bi-speedometer2 me-2"></i>Budget Health Score
-                                        </h5>
-                                        <small class="text-muted">Financial wellness indicator</small>
-                                    </div>
-                                    <div class="card-body text-center">
-                                        <canvas id="health-score-chart" style="height: 200px;"></canvas>
-                                        <div class="mt-3">
-                                            <h3 id="budget-health-score" class="text-primary">85</h3>
-                                            <p id="health-score-description" class="text-muted mb-0">Good financial health</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-        
-        <!-- Show Analytics Button -->
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <button class="btn btn-outline-primary btn-lg" id="show-analytics">
-                    <i class="bi bi-graph-up me-2"></i>Show Advanced Analytics
-                </button>
             </div>
-        </div>
-        
-        <!-- All Transactions Toggle Button -->
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <button class="btn btn-primary btn-lg" id="view-all-toggle">
-                    <i class="bi bi-list-ul me-2"></i><span id="view-toggle-text">View All Transactions</span>
-                </button>
-            </div>
-        </div>
 
-        <!-- AI Prompt Generator Section -->
-        <div class="row mt-4">
-            <section class="col-12" aria-labelledby="ai-prompt-heading">
-                <div class="card">
-                    <div class="card-body">
-                        <h2 class="card-title" id="ai-prompt-heading">AI-Powered Financial Advice</h2>
-                        <p class="text-muted">Generate a prompt with your financial summary to ask an AI for personalized advice.</p>
-                        <button class="btn btn-primary" id="generate-prompt-btn">
-                            <i class="bi bi-robot" aria-hidden="true"></i> Generate Advice Prompt
-                        </button>
-                        <div id="ai-prompt-container" class="mt-3" style="display: none;">
-                            <textarea id="advice-prompt-output" class="form-control" rows="10" readonly></textarea>
-                            <button class="btn btn-secondary mt-2" id="copy-prompt-btn">
-                                <i class="bi bi-clipboard" aria-hidden="true"></i> Copy Prompt
-                            </button>
-                        </div>
+            <div class="summary-card expense-card">
+                <div class="summary-icon">
+                    <i class="bi bi-arrow-down-circle"></i>
+                </div>
+                <div class="summary-content">
+                    <p class="summary-label">Expenses</p>
+                    <p class="summary-value" id="total-expenses">₹0</p>
+                </div>
+            </div>
+
+            <div class="summary-card balance-card">
+                <div class="summary-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div class="summary-content">
+                    <p class="summary-label">Balance</p>
+                    <p class="summary-value" id="balance">₹0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Add Transaction -->
+        <section class="add-section">
+            <h2>Add Transaction</h2>
+            <form id="transaction-form">
+                <div class="form-row">
+                    <div class="type-selector">
+                        <label class="type-option income-option">
+                            <input type="radio" name="type" value="income" checked>
+                            <span><i class="bi bi-arrow-up"></i> Income</span>
+                        </label>
+                        <label class="type-option expense-option">
+                            <input type="radio" name="type" value="expense">
+                            <span><i class="bi bi-arrow-down"></i> Expense</span>
+                        </label>
                     </div>
                 </div>
-            </section>
-        </div>
+
+                <div class="form-row">
+                    <input type="number" id="amount" name="amount" placeholder="Amount" required step="0.01" min="0.01">
+                </div>
+
+                <div class="form-row">
+                    <input type="text" id="description" name="description" placeholder="Description (optional)">
+                </div>
+
+                <div class="form-row">
+                    <select id="category" name="category" required>
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <input type="date" id="date" name="date" required>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Transaction
+                </button>
+
+                <button type="button" id="clear-all" class="btn-secondary">
+                    <i class="bi bi-trash"></i> Clear All Data
+                </button>
+            </form>
+        </section>
+
+        <!-- Manage Custom Categories -->
+        <section class="manage-categories-section" id="manage-categories-section" style="display: none;">
+            <h2>Manage Custom Categories</h2>
+            <div id="custom-categories-list" class="custom-categories-list">
+                <p class="empty-message">No custom categories yet</p>
+            </div>
+        </section>
+
+        <!-- Category Breakdown -->
+        <section class="category-section">
+            <div class="category-header">
+                <h2>This Month By Category</h2>
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="chart">
+                        <i class="bi bi-pie-chart"></i> Chart
+                    </button>
+                    <button class="view-btn" data-view="list">
+                        <i class="bi bi-list-ul"></i> List
+                    </button>
+                </div>
+            </div>
+            <div id="category-chart-container" class="chart-container">
+                <canvas id="category-chart"></canvas>
+            </div>
+            <div id="category-breakdown" class="category-list" style="display: none;">
+                <p class="empty-message">No transactions yet</p>
+            </div>
+        </section>
+
+        <!-- Transactions List -->
+        <section class="transactions-section">
+            <h2>This Month's Transactions</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="income">Income</button>
+                <button class="filter-btn" data-filter="expense">Expenses</button>
+            </div>
+            <div id="transaction-list" class="transaction-list">
+                <p class="empty-message">No transactions yet. Add your first transaction above!</p>
+            </div>
+        </section>
     </main>
-    </div>
 
-    <!-- Export Options Modal -->
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exportModalLabel">Export Encrypted Backup</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="exportForm">
-                        <div class="mb-3">
-                            <label for="exportPassphrase" class="form-label">Passphrase *</label>
-                            <input type="password" class="form-control" id="exportPassphrase" placeholder="Enter a secure passphrase" required>
-                            <div class="form-text">This passphrase will be required to import your data back.</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Export Method</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="exportMethod" id="downloadMethod" value="download" checked>
-                                <label class="form-check-label" for="downloadMethod">
-                                    <i class="bi bi-download me-1"></i>Download to Device
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="exportMethod" id="emailMethod" value="email">
-                                <label class="form-check-label" for="emailMethod">
-                                    <i class="bi bi-envelope me-1"></i>Send via Email
-                                </label>
-                            </div>
-                        </div>
-                        <div id="emailFields" style="display: none;">
-                            <div class="mb-3">
-                                <label for="recipientEmail" class="form-label">Recipient Email *</label>
-                                <input type="email" class="form-control" id="recipientEmail" placeholder="Enter email address">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmExport">Export Data</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Import Passphrase Modal -->
-    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="importModalLabel">Import Encrypted Backup</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="importForm">
-                        <div class="mb-3">
-                            <label for="importPassphrase" class="form-label">Enter Passphrase *</label>
-                            <input type="password" class="form-control" id="importPassphrase" placeholder="Enter the passphrase used during export" required>
-                            <div class="form-text">Enter the same passphrase used when exporting this file.</div>
-                        </div>
-                        <div id="importError" class="alert alert-danger d-none" role="alert">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            Incorrect passphrase. Please try again.
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmImport">Import Data</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Footer -->
-    <footer class="modern-footer" role="contentinfo">
-        <div class="container">
-            <!-- Main Footer Content -->
-            <div class="row g-4">
-                <!-- Quick Start Guide -->
-                <div class="col-lg-4">
-                    <div class="footer-section">
-                        <h5 class="footer-title">
-                            <i class="bi bi-rocket-takeoff me-2"></i>
-                            Quick Start Guide
-                        </h5>
-                        <div class="footer-steps">
-                            <div class="step-item">
-                                <span class="step-number">1</span>
-                                <div class="step-content">
-                                    <strong>Add Transaction</strong>
-                                    <small>Enter amount, pick category, add description (optional)</small>
-                                </div>
-                            </div>
-                            <div class="step-item">
-                                <span class="step-number">2</span>
-                                <div class="step-content">
-                                    <strong>View Charts</strong>
-                                    <small>See your spending patterns with interactive visualizations</small>
-                                </div>
-                            </div>
-                            <div class="step-item">
-                                <span class="step-number">3</span>
-                                <div class="step-content">
-                                    <strong>Track & Export</strong>
-                                    <small>Monitor balance, export data, analyze trends</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Features & Benefits -->
-                <div class="col-lg-4">
-                    <div class="footer-section">
-                        <h5 class="footer-title">
-                            <i class="bi bi-stars me-2"></i>
-                            Key Features
-                        </h5>
-                        <ul class="feature-list">
-                            <li><i class="bi bi-shield-lock"></i> <strong>100% Private:</strong> Data stays on your device</li>
-                            <li><i class="bi bi-graph-up"></i> <strong>Smart Analytics:</strong> Advanced spending insights</li>
-                            <li><i class="bi bi-currency-exchange"></i> <strong>Multi-Currency:</strong> 7+ major currencies supported</li>
-                            <li><i class="bi bi-download"></i> <strong>Export Ready:</strong> JSON backup & text summaries</li>
-                            <li><i class="bi bi-phone"></i> <strong>Mobile First:</strong> Works perfectly on all devices</li>
-                            <li><i class="bi bi-speedometer2"></i> <strong>Lightning Fast:</strong> No loading, instant responses</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Tips & Tricks -->
-                <div class="col-lg-4">
-                    <div class="footer-section">
-                        <h5 class="footer-title">
-                            <i class="bi bi-lightbulb me-2"></i>
-                            Pro Tips
-                        </h5>
-                        <div class="tips-list">
-                            <div class="tip-item">
-                                <i class="bi bi-tags"></i>
-                                <div>
-                                    <strong>Use Tags:</strong> Add tags like "work lunch", "birthday gift" for better tracking
-                                </div>
-                            </div>
-                            <div class="tip-item">
-                                <i class="bi bi-calendar-check"></i>
-                                <div>
-                                    <strong>Regular Updates:</strong> Log transactions daily for accurate insights
-                                </div>
-                            </div>
-                            <div class="tip-item">
-                                <i class="bi bi-pie-chart"></i>
-                                <div>
-                                    <strong>Categories Matter:</strong> Proper categorization improves analytics
-                                </div>
-                            </div>
-                            <div class="tip-item">
-                                <i class="bi bi-cloud-download"></i>
-                                <div>
-                                    <strong>Backup Regularly:</strong> Export your data weekly as backup
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Privacy & Tech Info -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="footer-highlight">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-shield-check privacy-icon me-3"></i>
-                                    <div>
-                                        <h6 class="mb-1">Privacy-First Design</h6>
-                                        <p class="mb-0 small">Your financial data never leaves your device. No accounts, no cloud storage, no tracking. Built with modern web technologies for maximum privacy and performance.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                                <div class="tech-badges">
-                                    <span class="tech-badge">HTML5</span>
-                                    <span class="tech-badge">CSS3</span>
-                                    <span class="tech-badge">JavaScript</span>
-                                    <span class="tech-badge">Chart.js</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Bottom Footer -->
-            <div class="row mt-4 pt-4 border-top">
-                <div class="col-md-6">
-                    <p class="mb-0 small text-muted">
-                        &copy; 2025 <strong>Dhanika</strong> • Built with ❤️ for privacy-conscious users
-                    </p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="footer-links">
-                        <a href="https://forms.gle/CjEv1mxojjrpczJY7" target="_blank" class="footer-link">
-                            <i class="bi bi-chat-dots"></i> Share Feedback
-                        </a>
-                        <a href="mailto:hello@eknath.dev" class="footer-link">
-                            <i class="bi bi-envelope"></i> Contact
-                        </a>
-                        <a href="https://eknath.dev" target="_blank" class="footer-link">
-                            <i class="bi bi-globe"></i> More Projects
-                        </a>
-                    </div>
-                </div>
-            </div>
+    <!-- Footer -->
+    <footer>
+        <div class="privacy-notice">
+            <i class="bi bi-shield-check"></i>
+            <span>Your data is stored locally in your browser - completely private and secure</span>
         </div>
     </footer>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
 
-    <!-- Snackbar for notifications -->
-    <div id="snackbar" class="snackbar" role="status" aria-live="polite" aria-atomic="true"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Loading Screen Handler -->
-    <script>
-        // Hide loading screen when page is fully loaded
-        window.addEventListener('load', function() {
-            const loadingScreen = document.getElementById('loading-screen');
-            
-            // Add a minimum display time for better UX
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                
-                // Remove from DOM after animation completes
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 800);
-            }, 2000); // Minimum 2 seconds display time
-        });
-        
-        // Fallback to hide loading screen after maximum time
-        setTimeout(() => {
-            const loadingScreen = document.getElementById('loading-screen');
-            if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
-                loadingScreen.classList.add('hidden');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 800);
-            }
-        }, 5000); // Maximum 5 seconds
-        
-        // Hide loading screen when DOM content is loaded (faster fallback)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Start checking if all critical resources are loaded
-            let resourcesChecked = 0;
-            const totalResources = 3; // CSS, JS, fonts
-            
-            function checkResourceLoaded() {
-                resourcesChecked++;
-                if (resourcesChecked >= totalResources) {
-                    setTimeout(() => {
-                        const loadingScreen = document.getElementById('loading-screen');
-                        if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
-                            loadingScreen.classList.add('hidden');
-                            setTimeout(() => {
-                                loadingScreen.style.display = 'none';
-                            }, 800);
-                        }
-                    }, 2000);
-                }
-            }
-            
-            // Check if fonts are loaded
-            if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(checkResourceLoaded);
-            } else {
-                checkResourceLoaded();
-            }
-            
-            // CSS and JS are checked via load event above
-            checkResourceLoaded();
-            checkResourceLoaded();
-        });
-    </script>
-    
     <script src="assets/js/script.js"></script>
 </body>
 </html>
